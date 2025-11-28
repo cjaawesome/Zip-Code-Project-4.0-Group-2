@@ -1,0 +1,240 @@
+#ifndef BLOCK_BUFFER_H
+#define BLOCK_BUFFER_H
+
+#include <vector>
+#include <cstdint>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include "RecordBuffer.h"
+#include "ZipCodeRecord.h"
+
+class BlockBuffer
+{
+    public:
+        /**
+         * @brief Default constructor
+         */
+        BlockBuffer();
+        /**
+         * @brief Destructor
+         */
+        ~BlockBuffer();
+
+        /**
+         * @brief Open file for reading
+         * @param filename [IN] Path to block file
+         * @return True if file opened successfully
+         */
+        bool openFile(const std::string& filename, const size_t headerSize);
+
+        /**
+         * @brief Check if there is more data in the file
+         * @return True if more data is available
+         */
+        bool hasMoreData() const;
+        
+        /**
+         * @brief Checks if the buffer is in an error state
+         * @return True if an error has occurred
+         */
+        bool hasError() const;
+
+        /**
+         * @brief Attempts to read a ZipCodeRecord from a block at a specific RBN
+         * @details Finds the correct block by RBN and reads the record if found
+         * @param rbn The RBN of the record to read
+         * @return True if the record was found and read successfully
+         */
+        bool readRecordAtRBN(const uint32_t rbn, const uint32_t zipCode, const uint32_t blockSize, const size_t headerSize, ZipCodeRecord& outRecord);
+
+        /**
+         * @brief Writes an active block to the rbn
+         * @details Writes the provided block data to the specified RBN in the file
+         * @param rbn The RBN of the block to write to
+         * @param block The ActiveBlock containing data to write
+         * @return True if write was successful
+         */
+        bool writeActiveBlockAtRBN(const uint32_t rbn, const uint32_t blockSize, 
+                                    const size_t headerSize, const ActiveBlock& block);
+
+        /**
+         * @brief Writes an available block to the rbn
+         * @details Writes the provided block data to the specifed RBN in the file
+         * @param rbn The RBN of the block to write to
+         * @param blockSize The size of blocks in the file
+         * @param headerSize The size of the file header
+         * @param block The AvailBlock containing the data to write
+         * @return True if write was succesful
+         */
+        bool writeAvailBlockAtRBN(const uint32_t rbn, const uint32_t blockSize,
+                                   const size_t headerSize, const AvailBlock& block);
+
+        /**
+         * @brief Attempts to remove a ZipCodeRecord from a block at a specific RBN
+         * @details Finds the correct block by RBN and removes the record if found
+         * @param rbn The block number that the ZipCode should be present in.
+         * @param blockSize The size of the each block in bytes.
+         * @param availListRBN The head of the current AvailList.
+         * @param zipCode The ZipCode that should be removed.
+         * @param headerSize The size of the file header in bytes.
+         * @param blockCount The number of blocks contained within the file.
+         * @return True if the record was found and removed successfully
+         */
+        bool removeRecordAtRBN(const uint32_t rbn, const uint16_t minBlockSize, uint32_t& availListRBN, 
+                                const uint32_t zipCode, const uint32_t blockSize, const size_t headerSize);
+
+        /**
+         * @brief Attempts to add a ZipCodeRecord to the active blocks.
+         * @details If there is no space in existing blocks, a new block is created. Finds correct block by key order.
+         * @param rbn The block number that the new zip code will try to be placed in.
+         * @param blockSize The size of the each block in bytes.
+         * @param availListRBN The head of the current AvailList.
+         * @param record The ZipCodeRecord to add.
+         * @param headerSize The size of the file header in bytes.
+         * @param blockCount The number of blocks contained within the file.
+         * @return True if the record was added successfully.
+         */
+        bool addRecord(const uint32_t rbn, const uint32_t blockSize, uint32_t& availListRBN, 
+                        const ZipCodeRecord& record, const size_t headerSize, uint32_t& blockCount);
+
+        /**
+         * @brief Checks if a merge occurred during the last remove operation
+         * @return True if a merge occurred
+         */
+        bool getMergeOccurred() const;
+
+        /**
+         * @brief Checks if a split occurred during the last add operation.
+         * @return True if a split occurred.
+         */
+        bool getSplitOccurred() const;
+
+        /**
+         * @brief Get description of last error.
+         * @return Error message string reference.
+         */
+        const std::string& getLastError() const;
+
+        /**
+         * @brief getter for memory offset.
+         * @return memory offset.
+         */
+        size_t getMemoryOffset();
+
+        /**
+         * @brief Close the currently opened file.
+         */
+        void closeFile();
+
+        /**
+         * @brief Dumps the physical order of blocks in the file to standard output.
+         * @param out [IN] Output stream to write to.
+         * @param sequenceSetHead The head of the ActiveBlock list.
+         * @param availHead The head of the AvailBlock list.
+         * @param blockCount The number of blocks contained within the file.
+         * @param blockSize The size in bytes that each block uses.
+         * @param headerSize The total size of the file header.
+         */
+       void dumpPhysicalOrder(std::ostream& out, uint32_t sequenceSetHead,
+                                   uint32_t availHead, uint32_t blockCount,
+                                   uint32_t blockSize, size_t headerSize);
+
+        /**
+         * @brief Dumps the logical order of active blocks in the file to standard output
+         * @param out [IN] Output stream to write to.
+         * @param sequenceSetHead The head of the ActiveBlock list.
+         * @param availHead The head of the AvailBlock list.
+         * @param blockSize The size in bytes that each block uses.
+         * @param headerSize The total size of the file header.
+         */
+        void dumpLogicalOrder(std::ostream& out, uint32_t sequenceSetHead,
+                                  uint32_t availHead, uint32_t blockSize,
+                                  size_t headerSize);
+
+        /**
+         * @brief Resets the mergeOccurred member variable.
+         */
+        void resetMerge();
+
+        /**
+         * @brief Reset the splitOccurred member variable.
+         */
+        void resetSplit();
+
+        /**
+         * @brief Get number of records processed
+         * @return Number of records processed
+         */
+        uint32_t getRecordsProcessed() const;
+
+        /**
+         * @brief Get number of blocks processed
+         * @return Number of blocks processed
+         */
+        uint32_t getBlocksProcessed() const;
+
+        /**
+         * @brief Loads an active block from the RBN
+         * @details Creates a local ActiveBlock to populate with data from the specified RBN in the file
+         * @param rbn The RBN of the block to load
+         * @return The populated ActiveBlock
+         */
+        ActiveBlock loadActiveBlockAtRBN(const uint32_t rbn, const uint32_t blockSize, const size_t headerSize);
+
+        /**
+         * @brief Loads an available block from the RBN
+         * @details Creates a local AvailBlock to populate with data from the specified RBN in the file
+         * @param rbn The RBN of the block to load
+         * @return The populated AvailBlock
+         */
+        AvailBlock loadAvailBlockAtRBN(const uint32_t rbn, const uint32_t blockSize, const size_t headerSize);
+
+    private:
+        uint32_t recordsProcessed; // Number of records processed from input stream
+        uint32_t blocksProcessed; // Number of blocks processed from input stream
+        std::fstream blockFile; // Input file stream
+        std::string lastError; // Last Error Message
+        bool errorState; // Has the Buffer encountered a critical error
+        bool mergeOccurred; // Tracks if a merge occurred during last remove operation. Likely temporary
+        bool splitOccurred; // Tracks if a split occurred during last add operation.
+        RecordBuffer recordBuffer; // RecordBuffer for packing/unpacking records
+
+        /**
+         * @brief Allocates a new block at the end of the file
+         * @return RBN of the newly allocated block
+         */
+        uint32_t allocateBlock(uint32_t& availListRBN, uint32_t& blockCount, 
+                                const uint32_t blockSize, const size_t headerSize);
+
+        /**
+         * @brief Frees a block at the specified RBN
+         * @details Push to available list
+         * @param rbn The RBN of the block to free
+         * @param availListRBN Reference to the avail list head RBN
+         * @param blockSize The size of blocks in the file
+         * @param headerSize The size of the file header
+         */
+        void freeBlock(const uint32_t rbn, uint32_t& availListRBN,
+                       const uint32_t blockSize, const size_t headerSize);
+
+        /**
+         * @brief Set error state with message
+         * @param message [IN] Error message to set
+         */
+        void setError(const std::string& message); 
+
+        bool tryBorrowFromPreceding(ActiveBlock& block, ActiveBlock& precedingBlock,
+                           std::vector<ZipCodeRecord>& records,
+                           std::vector<ZipCodeRecord>& precedingRecords,
+                           const uint32_t blockSize, const uint16_t minBlockSize,
+                           const size_t headerSize, const uint32_t rbn);
+
+        bool tryBorrowFromSucceeding(ActiveBlock& block, ActiveBlock& succeedingBlock,
+                                    std::vector<ZipCodeRecord>& records,
+                                    std::vector<ZipCodeRecord>& succeedingRecords,
+                                    const uint32_t blockSize, const uint16_t minBlockSize,
+                                    const size_t headerSize, const uint32_t rbn);
+};
+
+#endif // BlockBuffer
