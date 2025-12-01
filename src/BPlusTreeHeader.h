@@ -7,7 +7,8 @@
 #include <string>
 #include <vector>
 
-class BPlusTreeHeader {
+class BPlusTreeHeader 
+{
 public:
     BPlusTreeHeader() = default;
     ~BPlusTreeHeader() = default;
@@ -18,16 +19,21 @@ public:
     void setIndexFileName(const std::string& filename);
     std::string getIndexFileName() const;
 
-    void setHeight(uint32_t h);
+    void setHeight(const uint32_t h);
     uint32_t getHeight() const;
 
-    void setRootIndexRBN(uint32_t rbn);
+    void setRootIndexRBN(const uint32_t rbn);
     uint32_t getRootIndexRBN() const;
+
+    void setHeaderSize(const uint32_t inHeaderSize);
+    uint32_t getHeaderSize() const;
+
 
 private:
     std::string indexFileName;
     uint32_t height;
     uint32_t rootIndexRBN;
+    uint32_t headerSize;
 };
 
 

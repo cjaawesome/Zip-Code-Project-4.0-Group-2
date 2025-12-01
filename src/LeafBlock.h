@@ -49,6 +49,7 @@ private:
     std::Vector<keyType> keys;
     std::Vector<valueType> values;
     uint32_t nextLeafRBN;
+    uint32_t prevLeafRBN;
 };
 
 #include "LeafBlock.tpp"
