@@ -9,13 +9,14 @@ LeafBlock<keyType, valueType>::~LeafBlock(){
 }
 
 template <typename keyType, typename valueType>
-valueType LeafBlock<keyType, valueType>::find(const keyType& key) const{
+bool LeafBlock<keyType, valueType>::find(const keyType& key, valueType& outValue) const{
     for (size_t i = 0; i < keys.size(); ++i) {
         if (keys[i] == key) {
-            return values[i];
+            outValue = values[i];
+            return true;
         }
     }
-    throw std::runtime_error("Key not found");
+    return false;
 }
 
 template <typename keyType, typename valueType>
@@ -35,8 +36,15 @@ LeafBlock<keyType, valueType> LeafBlock<keyType, valueType>::split(){
     newLeaf.keys.assign(keys.begin() + midIndex, keys.end());
     newLeaf.values.assign(values.begin() + midIndex, values.end());
 
+    newLeaf.nextLeafRBN = this->nextLeafRBN; // New leaf's next RBN is current leaf's next RBN
+    this->nextLeafRBN = newLeaf.values.begin() + midIndex - 1; // Update next leaf RBN to point to new leaf
+    newLeaf.prevLeafRBN = values.begin(); // New leaf's previous RBN is current leaf's RBN
+
+    
     keys.resize(midIndex);
     values.resize(midIndex);
+
+    
 
     return newLeaf;
 }

@@ -26,9 +26,10 @@ public:
      * @brief Find
      * @details Finds the value for a given key
      * @param key the key to search for
-     * @returns the value associated with the key
+     * @param outValue the value associated with the key (output parameter)
+     * @returns true if key is found, false otherwise
      */
-    valueType find(const keyType& key) const;
+    bool find(const keyType& key, valueType& outValue) const;
     /**
      * @brief Insert Key-Value Pair
      * @details Inserts a key-value pair into the leaf block
@@ -36,6 +37,31 @@ public:
      * @param value the value to be inserted
      */
     void insertKV(const keyType &key, const valueType &value);
+    /**
+     * @brief Set Next Leaf RBN
+     * @details Sets the RBN of the next leaf block
+     * @param rbn the RBN to set
+     */
+    void setNextLeafRBN(uint32_t rbn);
+    /**
+     * @brief Get Next Leaf RBN
+     * @details Gets the RBN of the next leaf block
+     * @returns the RBN of the next leaf block
+     */
+    uint32_t getNextLeafRBN() const;
+    /**
+     * @brief Set Previous Leaf RBN
+     * @details Sets the RBN of the previous leaf block
+     * @param rbn the RBN to set
+     */
+    void setPrevLeafRBN(uint32_t rbn);
+    /**
+     * @brief Get Previous Leaf RBN
+     * @details Gets the RBN of the previous leaf block
+     * @returns the RBN of the previous leaf block
+     */
+    uint32_t getPrevLeafRBN() const;
+
     /**
      * @brief Split
      * @details Splits the leaf block into two
