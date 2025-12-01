@@ -1,6 +1,6 @@
-// IndexBlock.h
+// LeafBlock.h
 #ifndef LEAFBLOCK_H
-#define LeafBLOCK_H
+#define LEAFBLOCK_H
 
 #include <string>
 #include <vector>
@@ -16,7 +16,7 @@ public:
      * @brief Default constructor
      * @details Initializes leaf block
      */
-    LeafBlock() : nextLeafRBN(0) {}
+    LeafBlock();
     /**
      * @brief Destructor
      * @details Cleans up leaf block
@@ -46,12 +46,12 @@ public:
 
 
 private:
-    std::Vector<keyType> keys;
-    std::Vector<valueType> values;
+    std::vector<keyType> keys;
+    std::vector<valueType> values;
     uint32_t nextLeafRBN;
     uint32_t prevLeafRBN;
 };
 
 #include "LeafBlock.tpp"
 
-#endif // INDEXBLOCK_H
+#endif // LEAFBLOCK_H

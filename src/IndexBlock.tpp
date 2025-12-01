@@ -20,3 +20,17 @@ size_t IndexBlock<keyType, valueType>::findChild(const keyType& key) const {
     }
     return keys.size();
 }
+
+template<typename keyType, typename valueType>
+IndexBlock<keyType, valueType> IndexBlock<keyType, valueType>::split() {
+    IndexBlock<keyType, valueType> newIndexBlock;
+    size_t midIndex = keys.size() / 2;
+
+    newIndexBlock.keys.assign(keys.begin() + midIndex, keys.end());
+    newIndexBlock.childrenRBNs.assign(childrenRBNs.begin() + midIndex + 1, childrenRBNs.end());
+
+    keys.resize(midIndex);
+    childrenRBNs.resize(midIndex + 1);
+
+    return newIndexBlock;
+}

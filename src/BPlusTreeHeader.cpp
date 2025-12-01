@@ -5,9 +5,9 @@ BPlusTreeHeader::BPlusTreeHeader() : height(0), rootIndexRBN(0) {}
 BPlusTreeHeader::~BPlusTreeHeader(){
 }
 
-void BPlusTreeHeader::setIndexFileName(const std::string& inFileName)
+void BPlusTreeHeader::setBlockedFileName(const std::string& inFileName)
 {
-    this->indexFileName = inFileName;
+    this->blockedFileName = inFileName;
 }
 
 void BPlusTreeHeader::setHeight(const uint32_t inHeight)
@@ -20,9 +20,9 @@ void BPlusTreeHeader::setRootIndexRBN(const uint32_t inRBN)
     this->rootIndexRBN = inRBN;
 }
 
-std::string BPlusTreeHeader::getIndexFileName() const
+std::string BPlusTreeHeader::getBlockedFileName() const
 {
-    return indexFileName;
+    return blockedFileName;
 }
 
 uint32_t BPlusTreeHeader::getHeight() const
@@ -46,13 +46,13 @@ std::vector<uint8_t> BPlusTreeHeader::serialize() const
     data.insert(data.end(), reinterpret_cast<const uint8_t*>(&tempHeaderSize),
                 reinterpret_cast<const uint8_t*>(&tempHeaderSize) + sizeof(tempHeaderSize));
 
-    // Index Filename Length
-    uint16_t filenameLength = indexFileName.length();
+    // Blocked Filename Length
+    uint16_t filenameLength = blockedFileName.length();
     data.insert(data.end(), reinterpret_cast<const uint8_t*>(&filenameLength),
                 reinterpret_cast<const uint8_t*>(&filenameLength) + sizeof(filenameLength));
 
-    // Index Filename
-    data.insert(data.end(), indexFileName.begin(), indexFileName.end());
+    // Blocked Filename
+    data.insert(data.end(), blockedFileName.begin(), blockedFileName.end());
 
     // Insert Height
     data.insert(data.end(), reinterpret_cast<const uint8_t*>(&height),
@@ -76,13 +76,13 @@ BPlusTreeHeader BPlusTreeHeader::deserialize(const uint8_t* data)
     memcpy(&bHeader.headerSize, data + offset, sizeof(uint32_t));
     offset += sizeof(uint32_t);
 
-    // Read Index File Name Size
+    // Read Blocked File Name Size
     uint16_t fileNameSize;
     memcpy(&fileNameSize, data + offset, sizeof(uint16_t));
     offset += sizeof(uint16_t);
 
-    // Read Index File Name
-    bHeader.indexFileName = std::string(reinterpret_cast<const char*>(data + offset), fileNameSize);
+    // Read Blocked File Name
+    bHeader.blockedFileName = std::string(reinterpret_cast<const char*>(data + offset), fileNameSize);
     offset += fileNameSize;
 
     // Read Height

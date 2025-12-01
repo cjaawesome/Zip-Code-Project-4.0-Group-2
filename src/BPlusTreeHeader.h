@@ -16,8 +16,8 @@ public:
     std::vector<uint8_t> serialize() const;
     static BPlusTreeHeader deserialize(const uint8_t* data);
 
-    void setIndexFileName(const std::string& filename);
-    std::string getIndexFileName() const;
+    void setBlockedFileName(const std::string& filename);
+    std::string getBlockedFileName() const;
 
     void setHeight(const uint32_t h);
     uint32_t getHeight() const;
@@ -30,7 +30,7 @@ public:
 
 
 private:
-    std::string indexFileName;
+    std::string blockedFileName;
     uint32_t height;
     uint32_t rootIndexRBN;
     uint32_t headerSize;
