@@ -2,6 +2,8 @@
 #ifndef LEAFBLOCK_H
 #define LEAFBLOCK_H
 
+#include "Node.h"
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -9,7 +11,7 @@ const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
 const size_t MAX_VALUES = 2; // Example maximum number of values per leaf block
 
 template <typename keyType, typename valueType>
-class LeafBlock
+class LeafBlock : public Node<keyType>
 {
 public:
     /**
@@ -68,8 +70,13 @@ public:
      * @returns a new LeafBlock containing half the keys and values
      */
     LeafBlock split();
-    
 
+    /**
+     * @brief Is Leaf Node
+     * @details Identifies this node as a leaf node
+     * @returns true (always true for LeafBlock)
+     */
+    bool isLeafNode() const override;
 
 private:
     std::vector<keyType> keys;

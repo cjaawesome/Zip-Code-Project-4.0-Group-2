@@ -2,6 +2,7 @@
 #ifndef INDEXBLOCK_H
 #define INDEXBLOCK_H
 
+#include "Node.h"
 #include <string>
 #include <vector>
 
@@ -15,7 +16,7 @@ const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
  * @date 2025-10-02
  */
 template <typename keyType, typename valueType>
-class IndexBlock
+class IndexBlock : public Node<keyType>
 {
 public:
     /**
@@ -54,9 +55,15 @@ public:
      */
     IndexBlock split();
 
+    /**
+     * @brief Is Leaf Node
+     * @details Identifies this node as an index node (not a leaf)
+     * @returns false (always false for IndexBlock)
+     */
+    bool isLeafNode() const override;
+
 private:
-    std::Vector<keyType> keys;
-    std::Vector<keyType> childrenRBNs;
+    std::vector<valueType> childrenRBNs;
 };
 
 #include "IndexBlock.tpp"
