@@ -62,7 +62,7 @@ private:
     BlockBuffer blockBuffer;                // Manages file I/O and block caching
     
     // === Cached for efficiency (optional optimization) ===
-    IndexBlock<keyType, uint32_t>* rootIndexBlock;  // Root index block cached in RAM
+    IndexBlockNode<keyType, uint32_t>* rootIndexBlock;  // Root index block cached in RAM
     uint32_t rootIndexRBN;                  // RBN of root index block
     
     // === File State ===
@@ -75,7 +75,7 @@ private:
      * @param rbn the relative block number to load
      * @returns pointer to loaded IndexBlock (caller responsible for deletion)
      */
-    IndexBlock<keyType, uint32_t>* loadIndexBlockAtRBN(uint32_t rbn) const;
+    IndexBlockNode<keyType, uint32_t>* loadIndexBlockAtRBN(uint32_t rbn) const;
     
     /**
      * @brief Load Leaf Block from File
@@ -83,7 +83,7 @@ private:
      * @param rbn the relative block number to load
      * @returns pointer to loaded LeafBlock (caller responsible for deletion)
      */
-    LeafBlock<keyType, valueType>* loadLeafBlockAtRBN(uint32_t rbn) const;
+    LeafBlockNode<keyType, valueType>* loadLeafBlockAtRBN(uint32_t rbn) const;
     
     /**
      * @brief Write Index Block to File
@@ -92,7 +92,7 @@ private:
      * @param block the index block to write
      * @returns true if write was successful
      */
-    bool writeIndexBlockAtRBN(uint32_t rbn, const IndexBlock<keyType, uint32_t>& block);
+    bool writeIndexBlockAtRBN(uint32_t rbn, const IndexBlockNode<keyType, uint32_t>& block);
     
     /**
      * @brief Write Leaf Block to File
@@ -101,7 +101,7 @@ private:
      * @param block the leaf block to write
      * @returns true if write was successful
      */
-    bool writeLeafBlockAtRBN(uint32_t rbn, const LeafBlock<keyType, valueType>& block);
+    bool writeLeafBlockAtRBN(uint32_t rbn, const LeafBlockNode<keyType, valueType>& block);
     
     /**
      * @brief Search Index Path

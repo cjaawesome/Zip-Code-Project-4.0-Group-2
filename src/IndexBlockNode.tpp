@@ -1,18 +1,18 @@
-#include "IndexBlock.h"
+#include "IndexBlockNode.h"
 
 
 template<typename keyType, typename valueType>
-void IndexBlock<keyType, valueType>::addKey(const keyType& key) {
+void IndexBlockNode<keyType, valueType>::addKey(const keyType& key) {
     keys.push_back(key);
 }
 
 template<typename keyType, typename valueType>
-void IndexBlock<keyType, valueType>::addChildRBN(const keyType& rbn) {
+void IndexBlockNode<keyType, valueType>::addChildRBN(const keyType& rbn) {
     childrenRBNs.push_back(rbn);
 }
 
 template<typename keyType, typename valueType>
-size_t IndexBlock<keyType, valueType>::findChild(const keyType& key) const {
+size_t IndexBlockNode<keyType, valueType>::findChild(const keyType& key) const {
     for (size_t i = 0; i < keys.size(); ++i) {
         if (key < keys[i]) {
             return i;
@@ -22,8 +22,8 @@ size_t IndexBlock<keyType, valueType>::findChild(const keyType& key) const {
 }
 
 template<typename keyType, typename valueType>
-IndexBlock<keyType, valueType> IndexBlock<keyType, valueType>::split() {
-    IndexBlock<keyType, valueType> newIndexBlock;
+IndexBlockNode<keyType, valueType> IndexBlockNode<keyType, valueType>::split() {
+    IndexBlockNode<keyType, valueType> newIndexBlock;
     size_t midIndex = keys.size() / 2;
 
     newIndexBlock.keys.assign(keys.begin() + midIndex, keys.end());

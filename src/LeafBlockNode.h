@@ -1,6 +1,6 @@
-// LeafBlock.h
-#ifndef LEAFBLOCK_H
-#define LEAFBLOCK_H
+// LeafBlockNode.h
+#ifndef LEAFBLOCKNODE_H
+#define LEAFBLOCKNODE_H
 
 #include "Node.h"
 #include <cstdint>
@@ -11,19 +11,19 @@ const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
 const size_t MAX_VALUES = 2; // Example maximum number of values per leaf block
 
 template <typename keyType, typename valueType>
-class LeafBlock : public Node<keyType>
+class LeafBlockNode : public Node<keyType>
 {
 public:
     /**
      * @brief Default constructor
      * @details Initializes leaf block
      */
-    LeafBlock();
+    LeafBlockNode();
     /**
      * @brief Destructor
      * @details Cleans up leaf block
      */
-    ~LeafBlock() = default;
+    ~LeafBlockNode() = default;
     /**
      * @brief Find
      * @details Finds the value for a given key
@@ -69,7 +69,7 @@ public:
      * @details Splits the leaf block into two
      * @returns a new LeafBlock containing half the keys and values
      */
-    LeafBlock split();
+    LeafBlockNode split();
 
     /**
      * @brief Is Leaf Node
@@ -85,6 +85,6 @@ private:
     uint32_t prevLeafRBN;
 };
 
-#include "LeafBlock.tpp"
+#include "LeafBlockNode.tpp"
 
-#endif // LEAFBLOCK_H
+#endif // LEAFBLOCKNODE_H

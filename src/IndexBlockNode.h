@@ -1,6 +1,6 @@
-// IndexBlock.h
-#ifndef INDEXBLOCK_H
-#define INDEXBLOCK_H
+// IndexBlockNode.h
+#ifndef INDEXBLOCKNODE_H
+#define INDEXBLOCKNODE_H
 
 #include "Node.h"
 #include <string>
@@ -16,19 +16,19 @@ const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
  * @date 2025-10-02
  */
 template <typename keyType, typename valueType>
-class IndexBlock : public Node<keyType>
+class IndexBlockNode : public Node<keyType>
 {
 public:
     /**
      * @brief Default constructor
      * @details Initializes index block
      */
-    IndexBlock() = default;
+    IndexBlockNode() = default;
     /**
      * @brief Destructor
      * @details Cleans up index block
      */
-    ~IndexBlock() = default;
+    ~IndexBlockNode() = default;
     /**
      * @brief Add key
      * @details Adds a key to the index block
@@ -53,7 +53,7 @@ public:
      * @details Splits the index block into two
      * @returns a new IndexBlock containing half the keys and children
      */
-    IndexBlock split();
+    IndexBlockNode split();
 
     /**
      * @brief Is Leaf Node
@@ -66,6 +66,6 @@ private:
     std::vector<valueType> childrenRBNs;
 };
 
-#include "IndexBlock.tpp"
+#include "IndexBlockNode.tpp"
 
 #endif // INDEXBLOCK_H

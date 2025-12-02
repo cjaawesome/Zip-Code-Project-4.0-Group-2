@@ -1,15 +1,15 @@
-#include "LeafBlock.h"
+#include "LeafBlockNode.h"
 
 template <typename keyType, typename valueType>
-LeafBlock<keyType, valueType>::LeafBlock() : nextLeafRBN(0), prevLeafRBN(0) {}
+LeafBlockNode<keyType, valueType>::LeafBlockNode() : nextLeafRBN(0), prevLeafRBN(0) {}
 
 template <typename keyType, typename valueType>
-LeafBlock<keyType, valueType>::~LeafBlock(){
+LeafBlockNode<keyType, valueType>::~LeafBlockNode(){
 
 }
 
 template <typename keyType, typename valueType>
-bool LeafBlock<keyType, valueType>::find(const keyType& key, valueType& outValue) const{
+bool LeafBlockNode<keyType, valueType>::find(const keyType& key, valueType& outValue) const{
     for (size_t i = 0; i < keys.size(); ++i) {
         if (keys[i] == key) {
             outValue = values[i];
@@ -20,7 +20,7 @@ bool LeafBlock<keyType, valueType>::find(const keyType& key, valueType& outValue
 }
 
 template <typename keyType, typename valueType>
-void LeafBlock<keyType, valueType>::insertKV(const keyType &key, const valueType &value){
+void LeafBlockNode<keyType, valueType>::insertKV(const keyType &key, const valueType &value){
     if (keys.size() >= MAX_KEYS) {
         throw std::runtime_error("LeafBlock is full, cannot insert new key-value pair");
     }
@@ -29,8 +29,8 @@ void LeafBlock<keyType, valueType>::insertKV(const keyType &key, const valueType
 }
 
 template <typename keyType, typename valueType>
-LeafBlock<keyType, valueType> LeafBlock<keyType, valueType>::split(){
-    LeafBlock<keyType, valueType> newLeaf;
+LeafBlockNode<keyType, valueType> LeafBlockNode<keyType, valueType>::split(){
+    LeafBlockNode<keyType, valueType> newLeaf;
     size_t midIndex = keys.size() / 2;
 
     newLeaf.keys.assign(keys.begin() + midIndex, keys.end());
