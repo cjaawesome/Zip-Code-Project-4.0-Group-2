@@ -1,7 +1,7 @@
 #ifndef BPLUSTREEHEADER_H
 #define BPLUSTREEHEADER_H
-#include "IndexBlock.h"
-#include "LeafBlock.h"
+#include "IndexBlockNode.h"
+#include "LeafBlockNode.h"
 #include "HeaderRecord.h"
 #include "BlockBuffer.h"
 #include <string>
