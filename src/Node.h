@@ -12,6 +12,11 @@
  * @date 2025-12-02
  */
 
+
+
+const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
+const size_t MAX_VALUES = 2; // Example maximum number of values per leaf block
+
 /**
  * @class Node
  * @brief Abstract base class for B+ tree nodes (both index and leaf blocks)
@@ -19,7 +24,6 @@
  *          Both IndexBlock and LeafBlock inherit from this class to share
  *          common functionality and enforce a consistent interface.
  */
-template <typename keyType>
 class Node
 {
 public:
@@ -62,7 +66,7 @@ public:
      * @param index the position of the key to retrieve
      * @returns the key at the specified index
      */
-    virtual keyType getKeyAt(size_t index) const;
+    virtual uint32_t getKeyAt(size_t index) const;
 
     /**
      * @brief Check if node is a leaf node
@@ -76,10 +80,10 @@ public:
      * @details Virtual method for splitting the node (implemented by derived classes)
      * @returns a new Node containing half the keys
      */
-    virtual Node<keyType>* split() = 0;
+    virtual Node* split() = 0;
 
 protected:
-    std::vector<keyType> keys;  // Keys stored in this node
+    std::vector<uint32_t> keys;  // Keys stored in this node
 
     /**
      * @brief Clear all keys
@@ -92,7 +96,7 @@ protected:
      * @details Adds a key to the node's key vector
      * @param key the key to add
      */
-    virtual void addKey(const keyType& key);
+    virtual void addKey(const uint32_t& key);
 
     /**
      * @brief Remove key at index
@@ -102,6 +106,6 @@ protected:
     virtual void removeKeyAt(size_t index);
 };
 
-#include "Node.tpp"
+
 
 #endif // NODE_H

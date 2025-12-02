@@ -1,13 +1,13 @@
 #ifndef BPLUSTREE_H
 #define BPLUSTREE_H
-#include "IndexBlock.h"
-#include "LeafBlock.h"
+#include "IndexBlockNode.h"
+#include "LeafBlockNode.h"
 #include "HeaderRecord.h"
 #include "BlockBuffer.h"
 #include <string>
 #include <cstdint>
 
-template <typename keyType, typename valueType>
+
 class BPlusTree {
 public:
     /**
@@ -27,7 +27,7 @@ public:
      * @param value the value to be inserted
      * @returns true if insertion was successful
      */
-    bool insert(const keyType& key, const valueType& value);
+    bool insert(const uint32_t& key, const uint32_t& value);
     /**
      * @brief Search
      * @details Searches for a value by key in the BPlusTree file
@@ -35,7 +35,7 @@ public:
      * @param outValue the value associated with the key (output parameter)
      * @returns true if search was successful, false if key not found
      */
-    bool search(const keyType& key, valueType& outValue) const;
+    bool search(const uint32_t& key, uint32_t& outValue) const;
     /**
      * @brief Open
      * @details Opens or creates the BPlusTree index file. Loads the header record into RAM.
@@ -62,7 +62,7 @@ private:
     BlockBuffer blockBuffer;                // Manages file I/O and block caching
     
     // === Cached for efficiency (optional optimization) ===
-    IndexBlockNode<keyType, uint32_t>* rootIndexBlock;  // Root index block cached in RAM
+    IndexBlockNode* rootIndexBlock;  // Root index block cached in RAM
     uint32_t rootIndexRBN;                  // RBN of root index block
     
     // === File State ===
@@ -75,7 +75,7 @@ private:
      * @param rbn the relative block number to load
      * @returns pointer to loaded IndexBlock (caller responsible for deletion)
      */
-    IndexBlockNode<keyType, uint32_t>* loadIndexBlockAtRBN(uint32_t rbn) const;
+    IndexBlockNode* loadIndexBlockAtRBN(uint32_t rbn) const;
     
     /**
      * @brief Load Leaf Block from File
@@ -83,7 +83,7 @@ private:
      * @param rbn the relative block number to load
      * @returns pointer to loaded LeafBlock (caller responsible for deletion)
      */
-    LeafBlockNode<keyType, valueType>* loadLeafBlockAtRBN(uint32_t rbn) const;
+    LeafBlockNode* loadLeafBlockAtRBN(uint32_t rbn) const;
     
     /**
      * @brief Write Index Block to File
@@ -92,7 +92,7 @@ private:
      * @param block the index block to write
      * @returns true if write was successful
      */
-    bool writeIndexBlockAtRBN(uint32_t rbn, const IndexBlockNode<keyType, uint32_t>& block);
+    bool writeIndexBlockAtRBN(uint32_t rbn, const IndexBlockNode& block);
     
     /**
      * @brief Write Leaf Block to File
@@ -101,7 +101,7 @@ private:
      * @param block the leaf block to write
      * @returns true if write was successful
      */
-    bool writeLeafBlockAtRBN(uint32_t rbn, const LeafBlockNode<keyType, valueType>& block);
+    bool writeLeafBlockAtRBN(uint32_t rbn, const LeafBlockNode& block);
     
     /**
      * @brief Search Index Path
@@ -109,7 +109,7 @@ private:
      * @param key the key to search for
      * @returns the RBN of the leaf block containing the key
      */
-    uint32_t searchIndexPath(const keyType& key) const;
+    uint32_t searchIndexPath(const uint32_t& key) const;
     
     /**
      * @brief Split Index Block
@@ -128,6 +128,6 @@ private:
     uint32_t splitLeafBlock(uint32_t rbn);
 };
 
-#include "BPlusTree.tpp"
+
 
 #endif // BPLUSTREE_H

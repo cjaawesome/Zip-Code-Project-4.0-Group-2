@@ -1,34 +1,34 @@
 #include "BPlusTree.h"
 
-template <typename keyType, typename valueType>
-BPlusTree<keyType, valueType>::BPlusTree(){
+
+BPlusTree::BPlusTree(){
 
 }
 
-template <typename keyType, typename valueType>
-BPlusTree<keyType, valueType>::~BPlusTree(){
+
+BPlusTree::~BPlusTree(){
     
 }
 
-template <typename keyType, typename valueType>
-bool BPlusTree<keyType, valueType>::insert(const keyType& key, const valueType& value){
+
+bool BPlusTree::insert(const uint32_t& key, const uint32_t& value){
     
 }
-template <typename keyType, typename valueType>
-bool BPlusTree<keyType, valueType>::search(const keyType& key, valueType& outValue) const{
+
+bool BPlusTree::search(const uint32_t& key, uint32_t& outValue) const{
     
 }
-template <typename keyType, typename valueType>
-bool BPlusTree<keyType, valueType>::open(const std::string& filename){
+
+bool BPlusTree::open(const std::string& filename){
 
 }
 
-template <typename keyType, typename valueType>
-void BPlusTree<keyType, valueType>::close(){
+
+void BPlusTree::close(){
 
 }
 
-template <typename keyType, typename valueType>
-bool BPlusTree<keyType, valueType>::isOpen() const{
+
+bool BPlusTree::isOpen() const{
     return isFileOpen;
 }

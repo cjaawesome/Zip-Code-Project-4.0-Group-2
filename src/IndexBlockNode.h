@@ -15,8 +15,7 @@ const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
  * @version 0.1
  * @date 2025-10-02
  */
-template <typename keyType, typename valueType>
-class IndexBlockNode : public Node<keyType>
+class IndexBlockNode : public Node
 {
 public:
     /**
@@ -34,26 +33,26 @@ public:
      * @details Adds a key to the index block
      * @param key the key to be added
      */
-    void addKey(const keyType &key);
+    void addKey(const uint32_t &key);
     /**
      * @brief Add child RBN
      * @details Adds a child RBN to the index block
      * @param rbn the RBN to be added
      */
-    void addChildRBN(const keyType &rbn);
+    void addChildPageNumber(const uint32_t &pageNumber);
     /**
      * @brief Find child
      * @details Finds the child RBN for a given key
      * @param key the key to search for
      * @returns the index of the child RBN
      */
-    size_t findChild(const keyType &key) const;
+    size_t findChild(const uint32_t &key) const;
     /**
      * @brief Split
      * @details Splits the index block into two
      * @returns a new IndexBlock containing half the keys and children
      */
-    IndexBlockNode split();
+    Node* split() override;
 
     /**
      * @brief Is Leaf Node
@@ -63,9 +62,8 @@ public:
     bool isLeafNode() const override;
 
 private:
-    std::vector<valueType> childrenRBNs;
+    std::vector<uint32_t> childrenPageNumbers;
 };
 
-#include "IndexBlockNode.tpp"
 
 #endif // INDEXBLOCK_H
