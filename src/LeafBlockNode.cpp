@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 
-LeafBlockNode::LeafBlockNode() {}
+LeafBlockNode::LeafBlockNode() : Node() {}
 
 
 LeafBlockNode::~LeafBlockNode(){}
@@ -33,19 +33,19 @@ void LeafBlockNode::insertKV(const uint32_t &key, const uint32_t &value) {
     values.push_back(value);
 }
 
-void LeafBlockNode::setNextLeafPageNumber(int32_t pageNumber) {
+void LeafBlockNode::setNextLeafPageNumber(uint32_t pageNumber) {
     Node::setRightLink(pageNumber);
 }
 
-int32_t LeafBlockNode::getNextLeafPageNumber() const {
+uint32_t LeafBlockNode::getNextLeafPageNumber() const {
     return Node::getRightLink();
 }
 
-void LeafBlockNode::setPrevLeafPageNumber(int32_t pageNumber) {
+void LeafBlockNode::setPrevLeafPageNumber(uint32_t pageNumber) {
     Node::setLeftLink(pageNumber);
 }
 
-int32_t LeafBlockNode::getPrevLeafPageNumber() const {
+uint32_t LeafBlockNode::getPrevLeafPageNumber() const {
     return Node::getLeftLink();
 }
 

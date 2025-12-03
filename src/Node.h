@@ -77,35 +77,35 @@ public:
      * @details Sets the left sibling link for this node
      * @param link the RBN of the left sibling
      */
-    virtual void setLeftLink(int32_t link);
+    virtual void setLeftLink(uint32_t link);
 
     /**
      * @brief Get left link
      * @details Retrieves the left sibling link for this node
      * @returns the RBN of the left sibling
      */
-    virtual int32_t getLeftLink() const;
+    virtual uint32_t getLeftLink() const;
 
     /**
      * @brief Set right link
      * @details Sets the right sibling link for this node
      * @param link the RBN of the right sibling
      */
-    virtual void setRightLink(int32_t link);
+    virtual void setRightLink(uint32_t link);
 
     /**
      * @brief Get right link
      * @details Retrieves the right sibling link for this node
      * @returns the RBN of the right sibling
      */
-    virtual int32_t getRightLink() const;
+    virtual uint32_t getRightLink() const;
 
     /**
      * @brief Get right link
      * @details Retrieves the right sibling link for this node
      * @returns the RBN of the right sibling
      */
-    virtual void setParentLink(int32_t link);
+    virtual void setParentLink(uint32_t link);
 
     /**
      * @brief Get right link
@@ -132,11 +132,11 @@ public:
 protected:
     std::vector<uint32_t> keys;  // Keys stored in this node
 
-    int32_t parentLink;//page number of parent node
+    uint32_t parentLink;//page number of parent node
 
-    int32_t leftLink;//page number of left sibling node
+    uint32_t leftLink;//page number of left sibling node
 
-    int32_t rightLink;//page number of right sibling node
+    uint32_t rightLink;//page number of right sibling node
 
     /**
      * @brief Clear all keys

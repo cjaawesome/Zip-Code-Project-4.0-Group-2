@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 
-Node::Node() : leftLink(-1), rightLink(-1), parentLink(-1) {}
+Node::Node() : leftLink(0), rightLink(0), parentLink(0) {}
 
 Node::~Node(){}
 
@@ -42,19 +42,19 @@ void Node::removeKeyAt(size_t index) {
     keys.erase(keys.begin() + index);
 }
 
-void Node::setLeftLink(int32_t link) {
+void Node::setLeftLink(uint32_t link) {
     leftLink = link;
 }
 
-int32_t Node::getLeftLink() const {
+uint32_t Node::getLeftLink() const {
     return leftLink;
 }
 
-void Node::setRightLink(int32_t link) {
+void Node::setRightLink(uint32_t link) {
     rightLink = link;
 }
 
-int32_t Node::getRightLink() const {
+uint32_t Node::getRightLink() const {
     return rightLink;
 }
 
