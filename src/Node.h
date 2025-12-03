@@ -13,10 +13,6 @@
  */
 
 
-
-const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
-const size_t MAX_VALUES = 2; // Example maximum number of values per leaf block
-
 /**
  * @class Node
  * @brief Abstract base class for B+ tree nodes (both index and leaf blocks)
@@ -61,12 +57,58 @@ public:
     virtual size_t getKeyCount() const;
 
     /**
+     * @brief Get number of links in node
+     * @details Returns the current count of child links in this node
+     * @returns the number of child links stored in this node
+     */
+    virtual size_t getLinkCount() const;
+
+    /**
      * @brief Get key at index
      * @details Retrieves the key at the specified index
      * @param index the position of the key to retrieve
      * @returns the key at the specified index
      */
-    virtual uint32_t getKeyAt(size_t index) const;
+    virtual uint32_t getKeyAt(const size_t& index) const;
+    /**
+     * @brief Get link at index
+     * @details Retrieves the child link (RBN) at the specified index
+     * @param index the position of the link to retrieve
+     * @returns the child link (RBN) at the specified index
+     */
+    virtual uint32_t getLinkAt(const size_t& index) const;
+
+    /**
+     * @brief Set key at index
+     * @details Sets the key at the specified index
+     * @param index the position of the key to set
+     * @param key the key to set
+     * @returns true if successful, false otherwise
+     */
+    virtual bool setKeyAt(const size_t& index, const uint32_t& key);
+    
+    /**
+     * @brief Set link at index
+     * @details Sets the child link (RBN) at the specified index
+     * @param index the position of the link to set
+     * @param link the child link (RBN) to set
+     * @returns true if successful, false otherwise
+     */
+    virtual bool setLinkAt(const size_t& index, const uint32_t& link);
+    /**
+     * @brief Add link
+     * @details Adds a child link (RBN) to the node
+     * @param link the child link (RBN) to add
+     * @returns true if successful, false otherwise
+     */
+    virtual bool addLink(const uint32_t& link);
+    /**
+     * @brief Add key
+     * @details Adds a key to the node
+     * @param key the key to be added
+     * @returns true if successful, false otherwise
+     */
+    virtual bool addKey(const uint32_t& link);
 
     /**
      * @brief Check if node is a leaf node
@@ -84,26 +126,13 @@ public:
 
 protected:
     std::vector<uint32_t> keys;  // Keys stored in this node
-
+    std::vector<uint32_t> links;
     /**
      * @brief Clear all keys
      * @details Removes all keys from the node
      */
     virtual void clearKeys();
 
-    /**
-     * @brief Add key to node
-     * @details Adds a key to the node's key vector
-     * @param key the key to add
-     */
-    virtual void addKey(const uint32_t& key);
-
-    /**
-     * @brief Remove key at index
-     * @details Removes the key at the specified index
-     * @param index the position of the key to remove
-     */
-    virtual void removeKeyAt(size_t index);
 };
 
 

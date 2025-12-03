@@ -81,7 +81,6 @@ private:
     
     std::vector<uint32_t> values;
     uint32_t nextLeafPageNumber;
-    uint32_t middleLeafPageNumber;
     uint32_t prevLeafPageNumber;
 };
 
