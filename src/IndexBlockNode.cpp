@@ -52,3 +52,11 @@ Node* IndexBlockNode::split() {
 bool IndexBlockNode::isLeafNode() const {
     return false;
 }
+
+uint32_t IndexBlockNode::getParentLink() const {
+    return Node::getParentLink();
+}
+
+void IndexBlockNode::setParentLink(uint32_t link) {
+    Node::setParentLink(link);
+}

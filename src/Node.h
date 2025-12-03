@@ -112,7 +112,7 @@ public:
      * @details Retrieves the right sibling link for this node
      * @returns the RBN of the right sibling
      */
-    virtual int32_t getParentLink() const;
+    virtual uint32_t getParentLink() const;
 
 
     /**

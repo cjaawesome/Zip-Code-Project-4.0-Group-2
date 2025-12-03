@@ -91,6 +91,20 @@ public:
      */
     bool isLeafNode() const override;
 
+    /**
+     * @brief Get Parent Link
+     * @details Retrieves the parent link for this node
+     * @returns the RBN of the parent node
+     */
+    uint32_t getParentLink() const override;
+
+    /**
+     * @brief Set Parent Link
+     * @details Sets the parent link for this node
+     * @param link the RBN of the parent node
+     */
+    void setParentLink(uint32_t link) override;
+
 private:
     int32_t middleLink;
 };

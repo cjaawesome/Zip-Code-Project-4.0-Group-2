@@ -56,3 +56,9 @@ Node* LeafBlockNode::split() {
 bool LeafBlockNode::isLeafNode() const {
     return true;
 }
+void LeafBlockNode::setParentLink(uint32_t link) {
+    Node::setParentLink(link);
+}
+uint32_t LeafBlockNode::getParentLink() const {
+    return Node::getParentLink();
+}

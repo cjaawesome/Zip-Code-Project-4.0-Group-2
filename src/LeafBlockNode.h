@@ -64,6 +64,20 @@ public:
     uint32_t getPrevLeafPageNumber() const;
 
     /**
+     * @brief Set Parent Link
+     * @details Sets the parent link for this node
+     * @param link the RBN of the parent node
+     */
+    void setParentLink(uint32_t link) override;
+
+    /**
+     * @brief Get Parent Link
+     * @details Retrieves the parent link for this node
+     * @returns the RBN of the parent node
+     */
+    uint32_t getParentLink() const override;
+
+    /**
      * @brief Split
      * @details Splits the leaf block into two
      * @returns a new LeafBlock containing half the keys and values

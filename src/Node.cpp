@@ -58,3 +58,9 @@ uint32_t Node::getRightLink() const {
     return rightLink;
 }
 
+uint32_t Node::getParentLink() const {
+    return parentLink;
+}
+void Node::setParentLink(uint32_t link) {
+    parentLink = link;
+}
