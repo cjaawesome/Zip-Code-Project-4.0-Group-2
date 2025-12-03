@@ -10,7 +10,7 @@
 const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
 const size_t MAX_VALUES = 2; // Example maximum number of values per leaf block
 
-class LeafBlockNode : public Node
+class LeafBlockNode : private Node
 {
 public:
     /**

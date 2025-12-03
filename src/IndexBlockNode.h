@@ -15,7 +15,7 @@ const size_t MAX_KEYS = 2; // Example maximum number of keys per index block
  * @version 0.1
  * @date 2025-10-02
  */
-class IndexBlockNode : public Node
+class IndexBlockNode : private Node
 {
 public:
     /**
@@ -33,7 +33,7 @@ public:
      * @details Adds a key to the index block
      * @param key the key to be added
      */
-    void addKey(const uint32_t &key);
+    bool addKey(const uint32_t &key) override;
     /**
      * @brief Add child RBN
      * @details Adds a child RBN to the index block

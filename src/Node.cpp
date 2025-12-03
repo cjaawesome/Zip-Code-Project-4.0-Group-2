@@ -21,6 +21,7 @@ uint32_t Node::getLinkAt(const size_t& index) const {
     }
     return links[index];
 }
+
 bool Node::setKeyAt(const size_t& index, const uint32_t& key) {
     if (index >= keys.size()) {
         return false;
@@ -28,6 +29,7 @@ bool Node::setKeyAt(const size_t& index, const uint32_t& key) {
     keys[index] = key;
     return true;
 }
+
 bool Node::setLinkAt(const size_t& index, const uint32_t& link) {
     if (index >= links.size()) {
         return false;
@@ -35,17 +37,35 @@ bool Node::setLinkAt(const size_t& index, const uint32_t& link) {
     links[index] = link;
     return true;
 }
+
 bool Node::addKey(const uint32_t& key) {
     keys.push_back(key);
     return true;
 }
+
 bool Node::addLink(const uint32_t& link) {
     links.push_back(link);
     return true;
 }
+
 size_t Node::getKeyCount() const {
     return keys.size();
 }
+
 size_t Node::getLinkCount() const {
     return links.size();
+}
+
+void Node::removeKeyAt(size_t index) {
+    if (index >= keys.size()) {
+        throw std::out_of_range("Key index out of range");
+    }
+    keys.erase(keys.begin() + index);
+}
+
+void Node::removeLinkAt(size_t index) {
+    if (index >= links.size()) {
+        throw std::out_of_range("Link index out of range");
+    }
+    links.erase(links.begin() + index);
 }

@@ -111,6 +111,20 @@ public:
     virtual bool addKey(const uint32_t& link);
 
     /**
+     * @brief Remove key at index
+     * @details Removes the key at the specified index
+     * @param index the position of the key to remove
+     */
+    virtual void removeKeyAt(size_t index);
+
+    /**
+     * @brief Remove link at index
+     * @details Removes the child link (RBN) at the specified index
+     * @param index the position of the link to remove
+     */
+    virtual void removeLinkAt(size_t index);
+
+    /**
      * @brief Check if node is a leaf node
      * @details Determines the node type
      * @returns true if this is a leaf node, false if index node
