@@ -2,15 +2,13 @@
 #include <stdexcept>
 
 
-LeafBlockNode::LeafBlockNode() : nextLeafPageNumber(0), prevLeafPageNumber(0) {}
+LeafBlockNode::LeafBlockNode() {}
 
 
-LeafBlockNode::~LeafBlockNode(){
-
-}
+LeafBlockNode::~LeafBlockNode(){}
 
 
-bool LeafBlockNode::find(const uint32_t key, uint32_t& outValue) const{
+bool LeafBlockNode::find(const uint32_t key, uint32_t& outValue) const {
     for (size_t i = 0; i < keys.size(); ++i) {
         if (keys[i] == key) {
             outValue = values[i];
@@ -20,17 +18,41 @@ bool LeafBlockNode::find(const uint32_t key, uint32_t& outValue) const{
     return false;
 }
 
-
-void LeafBlockNode::insertKV(const uint32_t &key, const uint32_t &value){
-    if (keys.size() >= MAX_KEYS) {
-        throw std::runtime_error("LeafBlock is full, cannot insert new key-value pair");
+void LeafBlockNode::insertKV(const uint32_t &key, const uint32_t &value) {
+    for (size_t i = 0; i < keys.size(); ++i) {
+        if (key == keys[i]) {
+            values[i] = value; // Update existing key
+            return;
+        } else if (key < keys[i]) {
+            keys.insert(keys.begin() + i, key);
+            values.insert(values.begin() + i, value);
+            return;
+        }
     }
-    keys.push_back(key);
+    keys.push_back(key);   // Append at the end if it's the largest key
     values.push_back(value);
 }
 
-
-Node* LeafBlockNode::split() {
-    //idfk yet
+void LeafBlockNode::setNextLeafPageNumber(uint32_t pageNumber) {
+    Node::setRightLink(pageNumber);
 }
 
+uint32_t LeafBlockNode::getNextLeafPageNumber() const {
+    return Node::getRightLink();
+}
+
+void LeafBlockNode::setPrevLeafPageNumber(uint32_t pageNumber) {
+    Node::setLeftLink(pageNumber);
+}
+
+uint32_t LeafBlockNode::getPrevLeafPageNumber() const {
+    return Node::getLeftLink();
+}
+
+Node* LeafBlockNode::split() {
+    //that splitty split shit
+}
+
+bool LeafBlockNode::isLeafNode() const {
+    return true;
+}

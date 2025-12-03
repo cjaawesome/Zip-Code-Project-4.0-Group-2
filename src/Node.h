@@ -36,13 +36,6 @@ public:
     virtual ~Node() = default;
 
     /**
-     * @brief Check if node is full
-     * @details Determines if the node has reached maximum capacity
-     * @returns true if node has MAX_KEYS keys, false otherwise
-     */
-    virtual bool isFull() const;
-
-    /**
      * @brief Check if node is empty
      * @details Determines if the node has no keys
      * @returns true if node has no keys, false otherwise
@@ -57,51 +50,13 @@ public:
     virtual size_t getKeyCount() const;
 
     /**
-     * @brief Get number of links in node
-     * @details Returns the current count of child links in this node
-     * @returns the number of child links stored in this node
-     */
-    virtual size_t getLinkCount() const;
-
-    /**
      * @brief Get key at index
      * @details Retrieves the key at the specified index
      * @param index the position of the key to retrieve
      * @returns the key at the specified index
      */
     virtual uint32_t getKeyAt(const size_t& index) const;
-    /**
-     * @brief Get link at index
-     * @details Retrieves the child link (RBN) at the specified index
-     * @param index the position of the link to retrieve
-     * @returns the child link (RBN) at the specified index
-     */
-    virtual uint32_t getLinkAt(const size_t& index) const;
 
-    /**
-     * @brief Set key at index
-     * @details Sets the key at the specified index
-     * @param index the position of the key to set
-     * @param key the key to set
-     * @returns true if successful, false otherwise
-     */
-    virtual bool setKeyAt(const size_t& index, const uint32_t& key);
-    
-    /**
-     * @brief Set link at index
-     * @details Sets the child link (RBN) at the specified index
-     * @param index the position of the link to set
-     * @param link the child link (RBN) to set
-     * @returns true if successful, false otherwise
-     */
-    virtual bool setLinkAt(const size_t& index, const uint32_t& link);
-    /**
-     * @brief Add link
-     * @details Adds a child link (RBN) to the node
-     * @param link the child link (RBN) to add
-     * @returns true if successful, false otherwise
-     */
-    virtual bool addLink(const uint32_t& link);
     /**
      * @brief Add key
      * @details Adds a key to the node
@@ -118,11 +73,32 @@ public:
     virtual void removeKeyAt(size_t index);
 
     /**
-     * @brief Remove link at index
-     * @details Removes the child link (RBN) at the specified index
-     * @param index the position of the link to remove
+     * @brief Set left link
+     * @details Sets the left sibling link for this node
+     * @param link the RBN of the left sibling
      */
-    virtual void removeLinkAt(size_t index);
+    virtual void setLeftLink(uint32_t link);
+
+    /**
+     * @brief Get left link
+     * @details Retrieves the left sibling link for this node
+     * @returns the RBN of the left sibling
+     */
+    virtual uint32_t getLeftLink() const;
+
+    /**
+     * @brief Set right link
+     * @details Sets the right sibling link for this node
+     * @param link the RBN of the right sibling
+     */
+    virtual void setRightLink(uint32_t link);
+
+    /**
+     * @brief Get right link
+     * @details Retrieves the right sibling link for this node
+     * @returns the RBN of the right sibling
+     */
+    virtual uint32_t getRightLink() const;
 
     /**
      * @brief Check if node is a leaf node
@@ -140,7 +116,11 @@ public:
 
 protected:
     std::vector<uint32_t> keys;  // Keys stored in this node
-    std::vector<uint32_t> links;
+
+    uint32_t leftLink;
+
+    uint32_t rightLink;
+
     /**
      * @brief Clear all keys
      * @details Removes all keys from the node

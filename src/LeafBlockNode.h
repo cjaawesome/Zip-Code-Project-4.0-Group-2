@@ -78,10 +78,7 @@ public:
     bool isLeafNode() const override;
 
 private:
-    
     std::vector<uint32_t> values;
-    uint32_t nextLeafPageNumber;
-    uint32_t prevLeafPageNumber;
 };
 
 
