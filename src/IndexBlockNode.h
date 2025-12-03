@@ -39,37 +39,37 @@ public:
      * @details Sets the middle child link for this index block
      * @param link the RBN of the middle child
      */
-    void setMiddleLink(uint32_t link);
+    void setMiddleLink(int32_t link);
     /**
      * @brief Get middle link
      * @details Retrieves the middle child link for this index block
      * @returns the RBN of the middle child
      */
-    uint32_t getMiddleLink() const;
+    int32_t getMiddleLink() const;
     /**
      * @brief Set right link
      * @details Sets the right sibling link for this index block
      * @param link the RBN of the right sibling
      */
-    void setRightLink(uint32_t link) override;
+    void setRightLink(int32_t link) override;
     /**
      * @brief Get right link
      * @details Retrieves the right sibling link for this index block
      * @returns the RBN of the right sibling
      */
-    uint32_t getRightLink() const override;
+    int32_t getRightLink() const override;
     /**
      * @brief Set left link
      * @details Sets the left sibling link for this index block
      * @param link the RBN of the left sibling
      */
-    void setLeftLink(uint32_t link) override;
+    void setLeftLink(int32_t link) override;
     /**
      * @brief Get left link
      * @details Retrieves the left sibling link for this index block
      * @returns the RBN of the left sibling
      */
-    uint32_t getLeftLink() const override;
+    int32_t getLeftLink() const override;
     /**
      * @brief Find child
      * @details Finds the child RBN for a given key
@@ -92,7 +92,7 @@ public:
     bool isLeafNode() const override;
 
 private:
-    uint32_t middleLink;
+    int32_t middleLink;
 };
 
 

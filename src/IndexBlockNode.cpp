@@ -1,7 +1,7 @@
 #include "IndexBlockNode.h"
 #include <stdexcept>
 
-IndexBlockNode::IndexBlockNode(){}
+IndexBlockNode::IndexBlockNode() : Node(), middleLink(-1) {}
 
 IndexBlockNode::~IndexBlockNode(){}
 
@@ -12,27 +12,27 @@ bool IndexBlockNode::addKey(const uint32_t &key) {
     return Node::addKey(key);
 }
 
-void IndexBlockNode::setMiddleLink(uint32_t link) {
+void IndexBlockNode::setMiddleLink(int32_t link) {
     middleLink = link;
 }
 
-uint32_t IndexBlockNode::getMiddleLink() const {
+int32_t IndexBlockNode::getMiddleLink() const {
     return middleLink;
 }
 
-void IndexBlockNode::setRightLink(uint32_t link) {
+void IndexBlockNode::setRightLink(int32_t link) {
     Node::setRightLink(link);
 }
 
-uint32_t IndexBlockNode::getRightLink() const {
+int32_t IndexBlockNode::getRightLink() const {
     return Node::getRightLink();
 }
 
-void IndexBlockNode::setLeftLink(uint32_t link) {
+void IndexBlockNode::setLeftLink(int32_t link) {
     Node::setLeftLink(link);
 }
 
-uint32_t IndexBlockNode::getLeftLink() const {
+int32_t IndexBlockNode::getLeftLink() const {
     return Node::getLeftLink();
 }
 

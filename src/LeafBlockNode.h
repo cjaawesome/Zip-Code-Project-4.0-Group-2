@@ -43,25 +43,25 @@ public:
      * @details Sets the RBN of the next leaf block
      * @param rbn the RBN to set
      */
-    void setNextLeafPageNumber(uint32_t pageNumber);
+    void setNextLeafPageNumber(int32_t pageNumber);
     /**
      * @brief Get Next Leaf RBN
      * @details Gets the RBN of the next leaf block
      * @returns the RBN of the next leaf block
      */
-    uint32_t getNextLeafPageNumber() const;
+    int32_t getNextLeafPageNumber() const;
     /**
      * @brief Set Previous Leaf RBN
      * @details Sets the RBN of the previous leaf block
      * @param rbn the RBN to set
      */
-    void setPrevLeafPageNumber(uint32_t pageNumber);
+    void setPrevLeafPageNumber(int32_t pageNumber);
     /**
      * @brief Get Previous Leaf RBN
      * @details Gets the RBN of the previous leaf block
      * @returns the RBN of the previous leaf block
      */
-    uint32_t getPrevLeafPageNumber() const;
+    int32_t getPrevLeafPageNumber() const;
 
     /**
      * @brief Split
