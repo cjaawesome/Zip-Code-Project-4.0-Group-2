@@ -190,6 +190,8 @@ class BlockBuffer
          */
         AvailBlock loadAvailBlockAtRBN(const uint32_t rbn, const uint32_t blockSize, const size_t headerSize);
 
+        bool unpackBlockAPI(const std::vector<char>& blockData, std::vector<ZipCodeRecord>& records);
+
     private:
         uint32_t recordsProcessed; // Number of records processed from input stream
         uint32_t blocksProcessed; // Number of blocks processed from input stream

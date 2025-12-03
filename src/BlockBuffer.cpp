@@ -714,3 +714,8 @@ void BlockBuffer::resetSplit()
 {
     this->splitOccurred = false;
 }
+
+bool BlockBuffer::unpackBlockAPI(const std::vector<char>& blockData, std::vector<ZipCodeRecord>& outRecords)
+{
+    return recordBuffer.unpackBlock(blockData, outRecords);
+}

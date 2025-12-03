@@ -1,0 +1,90 @@
+#include "PageBufferAlt.h"
+
+PageBufferAlt::PageBufferAlt() : isOpen(false), errorState(false), lastError("") 
+{
+}
+
+PageBufferAlt::~PageBufferAlt() 
+{
+    if (isOpen) 
+    {
+        file.close();
+    }
+}
+
+bool PageBufferAlt::open(const std::string& filename, size_t blockSize, size_t headerSize) 
+{
+    this->blockSize = blockSize;
+    this->headerSize = headerSize;
+    file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+    if (!file.is_open()) 
+    {
+        setError("Failed to open file: " + filename);
+        return false;
+    }
+    isOpen = true;
+    return true;
+}
+
+bool PageBufferAlt::getIsOpen() const
+{
+    return isOpen;
+}
+
+bool PageBufferAlt::readBlock(uint32_t rbn, std::vector<uint8_t>& data)
+{
+    if (!isOpen) 
+    {
+        setError("File not open for reading");
+        return false;
+    }
+
+    data.resize(blockSize);
+    file.seekg(headerSize + rbn * blockSize, std::ios::beg);
+    file.read(reinterpret_cast<char*>(data.data()), blockSize);
+    if (file.gcount() < static_cast<std::streamsize>(blockSize)) 
+    {
+        setError("Failed to read full block at RBN: " + std::to_string(rbn));
+        return false;
+    }
+    return true;
+}
+
+bool PageBufferAlt::writeBlock(uint32_t rbn, const std::vector<uint8_t>& data)
+{
+    if (!isOpen) 
+    {
+        setError("File not open for writing");
+        return false;
+    }
+    if (data.size() != blockSize) 
+    {
+        setError("Data size does not match block size");
+        return false;
+    }
+
+    file.seekp(headerSize + rbn * blockSize, std::ios::beg);
+    file.write(reinterpret_cast<const char*>(data.data()), blockSize);
+    if (!file) 
+    {
+        setError("Failed to write full block at RBN: " + std::to_string(rbn));
+        return false;
+    }
+    return true;
+}
+
+bool PageBufferAlt::hasError() const 
+{
+    return errorState;
+}
+
+std::string PageBufferAlt::getLastError() const 
+{
+    return lastError;
+}
+
+void PageBufferAlt::closeFile()
+{
+    file.close();
+}
+
