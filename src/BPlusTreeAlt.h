@@ -30,8 +30,7 @@ public:
 
     uint32_t findLeafRBN(uint32_t key);
 
-    void printTree() const;
-    void dumpTree(std::ostream& out);
+    void printTree();
     void close();
 
 private:
@@ -58,14 +57,14 @@ private:
 
     NodeAlt* loadNode(uint32_t rbn);
     
-    uint32_t buildLevel(const std::vector<std::pair<uint32_t, uint32_t>>& entries, bool isLeaf);
     uint32_t searchRecursive(uint32_t nodeRBN, uint32_t key) const;
-    uint32_t splitNode(uint32_t nodeRBN, uint32_t& promotedKey, bool isLeaf);
-    uint32_t allocateIndexBlock();
+    uint32_t splitNode(uint32_t nodeRBN, uint32_t& promotedKey);
+    uint32_t allocateTreeBlock();
 
     bool writeNode(uint32_t rbn, const NodeAlt& node);
     bool buildTreeFromEntries(const std::vector<IndexEntry>& entries);
-    bool insertRecursive(uint32_t nodeRBN, uint32_t key) const;
+    bool insertRecursive(uint32_t nodeRBN, uint32_t key, uint32_t value, 
+                                    uint32_t& newChildRBN, uint32_t& newPromotedKey);
     bool removeRecursive(uint32_t nodeRBN, uint32_t key, bool& underflow);
 
     bool borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent, bool isLeaf);
@@ -73,6 +72,9 @@ private:
 
     void setError(const std::string& message);
     void freeIndexBlock(uint32_t rbn);
+    void printNode(uint32_t rbn, int depth);
+    void insertIntoLeaf(NodeAlt* node, uint32_t key, uint32_t value);
+    void insertIntoIndex(NodeAlt* node, uint32_t key, uint32_t childRBN);
 
     std::vector<uint32_t> buildLeafLevel(const std::vector<IndexEntry>& entries);
     std::vector<uint32_t> buildIndexLevel(const std::vector<uint32_t>& childRBNs);
