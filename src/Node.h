@@ -73,46 +73,77 @@ public:
     virtual void removeKeyAt(size_t index);
 
     /**
-     * @brief Set left link
-     * @details Sets the left sibling link for this node
-     * @param link the RBN of the left sibling
+     * @brief Add link
+     * @details Adds a child link (Page Number) to the node
+     * @param link the child link to be added
      */
-    virtual void setLeftLink(int32_t link);
+    virtual void addLink(const uint32_t& link);
 
     /**
-     * @brief Get left link
-     * @details Retrieves the left sibling link for this node
-     * @returns the RBN of the left sibling
+     * @brief Get link at index
+     * @details Retrieves the child link at the specified index
+     * @param index the position of the link to retrieve
+     * @returns the child link at the specified index
      */
-    virtual int32_t getLeftLink() const;
+    virtual uint32_t getLinkAt(const size_t& index) const;
 
     /**
-     * @brief Set right link
-     * @details Sets the right sibling link for this node
-     * @param link the RBN of the right sibling
+     * @brief Set link at index
+     * @details Sets the child link at the specified index
+     * @param index the position of the link to set
+     * @param link the child link to set
      */
-    virtual void setRightLink(int32_t link);
+    virtual void setLinkAt(const size_t& index, const uint32_t& link);
+
+    /**
+     * @brief Get link for key
+     * @details Retrieves the child link associated with the given key
+     * @param key the key to search for
+     * @returns the child link associated with the key
+     */
+    virtual uint32_t getLinkForKey(const uint32_t& key) const;
+
+    /**
+     * @brief Remove link at index
+     * @details Removes the child link at the specified index
+     * @param index the position of the link to remove
+     */
+    virtual void removeLinkAt(const size_t& index);
+
+    /**
+     * @brief Get number of links in node
+     * @details Returns the current count of child links in this node
+     * @returns the number of child links stored in this node
+     */
+    virtual size_t getLinkCount() const;
+
+    /**
+     * @brief Set page number
+     * @details Sets the page number for this node
+     * @param pageNum the page number to set
+     */
+    virtual void setPageNumber(uint32_t pageNum);
+
+    /**
+     * @brief Get page number
+     * @details Retrieves the page number for this node
+     * @returns the page number of this node
+     */
+    virtual uint32_t getPageNumber() const;
 
     /**
      * @brief Get right link
      * @details Retrieves the right sibling link for this node
      * @returns the RBN of the right sibling
      */
-    virtual int32_t getRightLink() const;
+    virtual void setParentLink(uint32_t link);
 
     /**
      * @brief Get right link
      * @details Retrieves the right sibling link for this node
      * @returns the RBN of the right sibling
      */
-    virtual void setParentLink(int32_t link);
-
-    /**
-     * @brief Get right link
-     * @details Retrieves the right sibling link for this node
-     * @returns the RBN of the right sibling
-     */
-    virtual int32_t getParentLink() const;
+    virtual uint32_t getParentLink() const;
 
 
     /**
@@ -132,11 +163,13 @@ public:
 protected:
     std::vector<uint32_t> keys;  // Keys stored in this node
 
-    int32_t parentLink;//page number of parent node
+    std::vector<uint32_t> links; // Child links (Page Numbers) for index nodes
 
-    int32_t leftLink;//page number of left sibling node
+    uint32_t pageNumber;//page number of this node
 
-    int32_t rightLink;//page number of right sibling node
+    uint32_t parentLink;//page number of parent node
+
+    
 
     /**
      * @brief Clear all keys

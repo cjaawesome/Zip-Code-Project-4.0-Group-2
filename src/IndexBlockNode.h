@@ -39,37 +39,37 @@ public:
      * @details Sets the middle child link for this index block
      * @param link the RBN of the middle child
      */
-    void setMiddleLink(int32_t link);
+    void setMiddleLink(uint32_t link);
     /**
      * @brief Get middle link
      * @details Retrieves the middle child link for this index block
      * @returns the RBN of the middle child
      */
-    int32_t getMiddleLink() const;
+    uint32_t getMiddleLink() const;
     /**
      * @brief Set right link
      * @details Sets the right sibling link for this index block
      * @param link the RBN of the right sibling
      */
-    void setRightLink(int32_t link) override;
+    void setRightLink(uint32_t link) override;
     /**
      * @brief Get right link
      * @details Retrieves the right sibling link for this index block
      * @returns the RBN of the right sibling
      */
-    int32_t getRightLink() const override;
+    uint32_t getRightLink() const override;
     /**
      * @brief Set left link
      * @details Sets the left sibling link for this index block
      * @param link the RBN of the left sibling
      */
-    void setLeftLink(int32_t link) override;
+    void setLeftLink(uint32_t link) override;
     /**
      * @brief Get left link
      * @details Retrieves the left sibling link for this index block
      * @returns the RBN of the left sibling
      */
-    int32_t getLeftLink() const override;
+    uint32_t getLeftLink() const override;
     /**
      * @brief Find child
      * @details Finds the child RBN for a given key
@@ -90,6 +90,20 @@ public:
      * @returns false (always false for IndexBlock)
      */
     bool isLeafNode() const override;
+
+    /**
+     * @brief Get Parent Link
+     * @details Retrieves the parent link for this node
+     * @returns the RBN of the parent node
+     */
+    uint32_t getParentLink() const override;
+
+    /**
+     * @brief Set Parent Link
+     * @details Sets the parent link for this node
+     * @param link the RBN of the parent node
+     */
+    void setParentLink(uint32_t link) override;
 
 private:
     int32_t middleLink;

@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 
-Node::Node() : leftLink(-1), rightLink(-1), parentLink(-1) {}
+Node::Node() : parentLink(0) {}
 
 Node::~Node(){}
 
@@ -42,19 +42,55 @@ void Node::removeKeyAt(size_t index) {
     keys.erase(keys.begin() + index);
 }
 
-void Node::setLeftLink(int32_t link) {
-    leftLink = link;
+void Node::addLink(const uint32_t& link) {
+    links.push_back(link);
 }
 
-int32_t Node::getLeftLink() const {
-    return leftLink;
+uint32_t Node::getLinkAt(const size_t& index) const {
+    if (index >= links.size()) {
+        throw std::out_of_range("Link index out of range");
+    }
+    return links[index];
 }
 
-void Node::setRightLink(int32_t link) {
-    rightLink = link;
+void Node::setLinkAt(const size_t& index, const uint32_t& link) {
+    if (index >= links.size()) {
+        throw std::out_of_range("Link index out of range");
+    }
+    links[index] = link;
 }
 
-int32_t Node::getRightLink() const {
-    return rightLink;
+uint32_t Node::getLinkForKey(const uint32_t& key) const {
+    for (size_t i = 0; i < keys.size(); ++i) {
+        if (key < keys[i]) {
+            return links[i];
+        }
+    }
+    return links.back(); // Return last link if key is greater than all keys
 }
 
+void Node::removeLinkAt(const size_t& index) {
+    if (index >= links.size()) {
+        throw std::out_of_range("Link index out of range");
+    }
+    links.erase(links.begin() + index);
+}
+
+size_t Node::getLinkCount() const {
+    return links.size();
+}
+
+void Node::setPageNumber(uint32_t pageNum) {
+    pageNumber = pageNum;
+}
+
+uint32_t Node::getPageNumber() const {
+    return pageNumber;
+}
+
+uint32_t Node::getParentLink() const {
+    return parentLink;
+}
+void Node::setParentLink(uint32_t link) {
+    parentLink = link;
+}

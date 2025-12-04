@@ -1,7 +1,7 @@
 #include "IndexBlockNode.h"
 #include <stdexcept>
 
-IndexBlockNode::IndexBlockNode() : Node(), middleLink(-1) {}
+IndexBlockNode::IndexBlockNode() : Node(), middleLink(0) {}
 
 IndexBlockNode::~IndexBlockNode(){}
 
@@ -12,27 +12,27 @@ bool IndexBlockNode::addKey(const uint32_t &key) {
     return Node::addKey(key);
 }
 
-void IndexBlockNode::setMiddleLink(int32_t link) {
+void IndexBlockNode::setMiddleLink(uint32_t link) {
     middleLink = link;
 }
 
-int32_t IndexBlockNode::getMiddleLink() const {
+uint32_t IndexBlockNode::getMiddleLink() const {
     return middleLink;
 }
 
-void IndexBlockNode::setRightLink(int32_t link) {
+void IndexBlockNode::setRightLink(uint32_t link) {
     Node::setRightLink(link);
 }
 
-int32_t IndexBlockNode::getRightLink() const {
+uint32_t IndexBlockNode::getRightLink() const {
     return Node::getRightLink();
 }
 
-void IndexBlockNode::setLeftLink(int32_t link) {
+void IndexBlockNode::setLeftLink(uint32_t link) {
     Node::setLeftLink(link);
 }
 
-int32_t IndexBlockNode::getLeftLink() const {
+uint32_t IndexBlockNode::getLeftLink() const {
     return Node::getLeftLink();
 }
 
@@ -51,4 +51,12 @@ Node* IndexBlockNode::split() {
 
 bool IndexBlockNode::isLeafNode() const {
     return false;
+}
+
+uint32_t IndexBlockNode::getParentLink() const {
+    return Node::getParentLink();
+}
+
+void IndexBlockNode::setParentLink(uint32_t link) {
+    Node::setParentLink(link);
 }
