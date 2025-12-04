@@ -2,7 +2,10 @@
 #include <stdexcept>
 
 
-LeafBlockNode::LeafBlockNode() : Node() {}
+LeafBlockNode::LeafBlockNode() : Node() {
+    Node::addLink(0); // Left sibling link
+    Node::addLink(0); // Right sibling link
+}
 
 
 LeafBlockNode::~LeafBlockNode(){}
@@ -31,26 +34,34 @@ void LeafBlockNode::insertKV(const uint32_t &key, const uint32_t &value) {
     }
     keys.push_back(key);   // Append at the end if it's the largest key
     values.push_back(value);
+    if(keys.size() > MAX_KEYS) {
+        split();
+    }
 }
 
 void LeafBlockNode::setNextLeafPageNumber(uint32_t pageNumber) {
-    Node::setRightLink(pageNumber);
+    Node::setLinkAt(1, pageNumber);
 }
 
 uint32_t LeafBlockNode::getNextLeafPageNumber() const {
-    return Node::getRightLink();
+    return Node::getLinkAt(1);
 }
 
 void LeafBlockNode::setPrevLeafPageNumber(uint32_t pageNumber) {
-    Node::setLeftLink(pageNumber);
+    Node::setLinkAt(0, pageNumber);
 }
 
 uint32_t LeafBlockNode::getPrevLeafPageNumber() const {
-    return Node::getLeftLink();
+    return Node::getLinkAt(0);
 }
 
 Node* LeafBlockNode::split() {
-    //that splitty split shit
+    if(parentLink == 0) {
+        
+    }
+    else {
+
+    }
 }
 
 bool LeafBlockNode::isLeafNode() const {
