@@ -3,6 +3,7 @@
 
 #include "HeaderBuffer.h"
 #include "BlockBuffer.h"
+#include "BlockIndexFile.h"
 #include "BPlusTreeHeaderBufferAlt.h"
 #include "NodeAlt.h"
 #include "PageBufferAlt.h"

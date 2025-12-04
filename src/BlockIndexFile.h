@@ -3,9 +3,11 @@
 
 #include "stdint.h"
 #include "BlockBuffer.h"
+#include "BPlusTreeAlt.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
+
 
 struct  IndexEntry
 {
@@ -66,6 +68,9 @@ public:
      * @return RBN of block that should contain this zip (or -1 if not found)
      */
     uint32_t findRBNForKey(const uint32_t zipCode) const;
+
+    void convertIndexToBPlusTree(const std::string& bPlusTreeFileName);
+
 
 private:
     std::vector<IndexEntry> indexEntries; // Vector of index entries

@@ -7,6 +7,7 @@
 #include "../src/BlockBuffer.h"
 #include "../src/DataManager.h"
 #include "../src/BlockIndexFile.h"
+#include "../src/BPlusTreeAlt.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -40,6 +41,34 @@ void printUsage(const char* programName)
               << "  " << programName << " verify PT2_CSV.csv output.zcd\n"
               << "  " << programName << " zcd-search output.zcd zipcode_data.idx 55455 30301\n";
 
+}
+
+bool createBPlusTreeIndexFromBlockIndex(const std::string& blockIndexFileName, 
+                                    const std::string& bPlusTreeFileName)
+{
+    //none functional yet
+    BlockIndexFile blockIndex;
+    if (!blockIndex.read(blockIndexFileName)) 
+    {
+        std::cerr << "Error: Failed to read block index file: " << blockIndexFileName << std::endl;
+        return false;
+    }
+
+    BPlusTreeAlt bPlusTree;
+    if (!bPlusTree.open(bPlusTreeFileName, "")) 
+    {
+        std::cerr << "Error: Failed to open/create B+ tree file: " << bPlusTreeFileName << std::endl;
+        return false;
+    }
+
+    if (!bPlusTree.buildFromSequenceSet()) 
+    {
+        std::cerr << "Error: Failed to build B+ tree from block index entries." << std::endl;
+        return false;
+    }
+
+    bPlusTree.close();
+    return true;
 }
 
 bool convertCSVtoZCD(const std::string& inFile, const std::string& outFile) 

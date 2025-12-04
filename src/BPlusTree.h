@@ -4,8 +4,11 @@
 #include "LeafBlockNode.h"
 #include "HeaderRecord.h"
 #include "BlockBuffer.h"
+#include "BlockIndexFile.h"
+#include <vector>
 #include <string>
 #include <cstdint>
+
 
 
 class BPlusTree {
@@ -54,6 +57,8 @@ public:
      * @returns true if file is open, false otherwise
      */
     bool isOpen() const;
+
+    
 
 private:
     // === Persistent on Disk, Minimal in RAM ===
