@@ -86,6 +86,30 @@ void BPlusTreeAlt::close()
     isOpen = false;
 }
 
+void BPlusTreeAlt::convertIndexToBPlusTree(const std::vector<BlockIndexFile::IndexEntry>& indexEntries, const std::string& bPlusTreeFileName, uint32_t BlockSize)
+{
+    BPlusTreeHeaderBufferAlt bPlusTreeHeaderBuffer;
+    treeHeader.setBlockedFileName(bPlusTreeFileName);
+    treeHeader.setBlockSize(BlockSize);
+    treeHeader.setHeaderSize(sizeof(BPlusTreeHeaderAlt));
+
+    bPlusTreeHeaderBuffer.writeHeader(bPlusTreeFileName, treeHeader);
+
+    isOpen = true;
+    blockSize = BlockSize;
+    sequenceHeaderSize = sizeof(BPlusTreeHeaderAlt);
+
+    std::vector<BPlusTreeAlt::IndexEntry> entries;
+    for(const auto& idxEntry : indexEntries)
+    {
+        BPlusTreeAlt::IndexEntry entry = {idxEntry.key, idxEntry.recordRBN};
+        entries.push_back(entry);
+    }
+    buildTreeFromEntries(entries);
+    
+    isOpen = false;
+}
+
 void BPlusTreeAlt::setError(const std::string& message)
 {
     errorState = true;

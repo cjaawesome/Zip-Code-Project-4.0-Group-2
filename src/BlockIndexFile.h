@@ -9,17 +9,19 @@
 #include <vector>
 
 
-struct  IndexEntry
-{
-    uint32_t key; // The key for the index entry
-    uint32_t recordRBN; // The RBN of the record in the data file
-    uint32_t previousRBN; //previous RBN
-    uint32_t nextRBN; //next RBN
-};
+
 
 class BlockIndexFile
 {
 public:
+    
+    struct  IndexEntry
+    {
+        uint32_t key; // The key for the index entry
+        uint32_t recordRBN; // The RBN of the record in the data file
+        uint32_t previousRBN; //previous RBN
+        uint32_t nextRBN; //next RBN
+    };
     /**
      * @brief Default constructor
      */
@@ -69,7 +71,7 @@ public:
      */
     uint32_t findRBNForKey(const uint32_t zipCode) const;
 
-    void convertIndexToBPlusTree(const std::string& bPlusTreeFileName);
+    void convertIndexToBPlusTree(const std::string& bPlusTreeFileName, uint32_t blockSize);
 
 
 private:

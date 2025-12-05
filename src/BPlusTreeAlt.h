@@ -34,6 +34,8 @@ public:
     void printTree();
     void close();
 
+    void convertIndexToBPlusTree(const std::vector<BlockIndexFile::IndexEntry>& indexEntries, const std::string& bPlusTreeFileName, uint32_t blockSize);
+
 private:
     bool isOpen; // Is the B+ tree file open (redundant with PageBufferAlt?)
     bool errorState; // Error state flag
