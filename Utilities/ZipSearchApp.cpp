@@ -3,6 +3,8 @@
 #include "../src/ZipCodeRecord.h"
 #include "../src/HeaderRecord.h"
 #include "../src/HeaderBuffer.h"
+#include "../src/BPlusTreeAlt.h"
+#include "../src/BPlusTreeHeaderAlt.h"
 #include "ZipSearchApp.h"
 #include <iostream>
 #include <sstream>
@@ -36,6 +38,8 @@ ZipSearchApp::ZipSearchApp(const std::string& file){
     fileLoaded = true;
     HeaderRecord header;
     HeaderBuffer headerBuffer;
+    BPlusTreeAlt bPlusTree;
+    BPlusTreeHeaderAlt bPlusTreeHeader;
     if (!headerBuffer.readHeader(fileName, header))
     {
         std::cerr << "Failed to read header from " << fileName << std::endl;
