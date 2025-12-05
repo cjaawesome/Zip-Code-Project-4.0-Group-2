@@ -127,9 +127,3 @@ uint32_t BlockIndexFile::findRBNForKey(const uint32_t zipCode) const
     }
     return -1;
 }
-
-void BlockIndexFile::convertIndexToBPlusTree(const std::string& bPlusTreeFileName, uint32_t blockSize)
-{
-    BPlusTreeAlt bPlusTree;
-    bPlusTree.convertIndexToBPlusTree(indexEntries, bPlusTreeFileName, blockSize);
-}

@@ -12,10 +12,16 @@ PageBufferAlt::~PageBufferAlt()
     }
 }
 
+std::string PageBufferAlt::getFileName() const 
+{
+    return fileName;
+}
+
 bool PageBufferAlt::open(const std::string& filename, size_t blockSize, size_t headerSize) 
 {
     this->blockSize = blockSize;
     this->headerSize = headerSize;
+    setFileName(filename);
     file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
     if (!file.is_open()) 
     {
@@ -24,6 +30,11 @@ bool PageBufferAlt::open(const std::string& filename, size_t blockSize, size_t h
     }
     isOpen = true;
     return true;
+}
+
+void PageBufferAlt::setFileName(const std::string& filename)
+{
+    this->fileName = filename;
 }
 
 bool PageBufferAlt::getIsOpen() const
@@ -88,3 +99,13 @@ void PageBufferAlt::closeFile()
     file.close();
 }
 
+void PageBufferAlt::setError(const std::string& message)
+{
+    errorState = true;
+    lastError = message;
+}
+
+std::fstream& PageBufferAlt::getFileStream()
+{
+    return file;
+}

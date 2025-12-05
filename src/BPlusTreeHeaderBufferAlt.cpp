@@ -1,7 +1,4 @@
 #include "BPlusTreeHeaderBufferAlt.h"
-#include <fstream>
-#include <vector>
-#include <cstring>
 
 BPlusTreeHeaderBufferAlt::BPlusTreeHeaderBufferAlt() : errorState(false), lastError("") {}
 
@@ -47,19 +44,11 @@ bool BPlusTreeHeaderBufferAlt::readHeader(const std::string& filename, BPlusTree
     return true;
 }
 
-bool BPlusTreeHeaderBufferAlt::writeHeader(const std::string& filename, const BPlusTreeHeaderAlt& bHeader)
+bool BPlusTreeHeaderBufferAlt::writeHeader(std::fstream& file, BPlusTreeHeaderAlt& bHeader)
 {
-    std::ofstream file(filename, std::ios::binary);
-    if (!file.is_open()) 
-    {
-        setError("Cannot create file: " + filename);
-        return false;
-    }
-    
+    file.seekp(0, std::ios::beg);
     auto headerData = bHeader.serialize();
     file.write(reinterpret_cast<char*>(headerData.data()), headerData.size());
-    file.close();
-    
     return true;
 }
 

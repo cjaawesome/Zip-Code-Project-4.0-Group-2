@@ -59,7 +59,7 @@ bool NodeAlt::removeKeyAt(size_t index)
 
 bool NodeAlt::insertChildRBN(size_t index, uint32_t rbn)
 {
-    if (index >= childRBNs.size() || (!isLeaf && childRBNs.size() >= maxKeys + 1))
+    if (index > childRBNs.size() || (!isLeaf && childRBNs.size() >= maxKeys + 1))
     {
         setError("Index out of bounds or too many children in insertChildRBN");
         return false;
@@ -265,6 +265,8 @@ size_t NodeAlt::calculateMaxKeys(size_t blockSize, bool isLeaf)
         // Plus one extra child RBN at the end
         size_t entrySize = 8;
         size_t maxEntries = (blockSize - headerSize - 4) / entrySize;
+        if (maxEntries < 1) 
+            return 1;
         return maxEntries;
     }
 }
@@ -272,14 +274,19 @@ size_t NodeAlt::calculateMaxKeys(size_t blockSize, bool isLeaf)
 uint32_t NodeAlt::getKeyAt(size_t index) const
 {
     if(index >= keys.size())
-        return uint32_t(-1);
+    {
+         return uint32_t(-1);
+    }
+       
     return keys[index];
 }
 
 uint32_t NodeAlt::getValueAt(size_t index) const
 {
-    if(index > values.size())
-        return uint32_t(-1);
+    if(index >= values.size())
+    {
+         return uint32_t(-1);
+    }
     return values[index];
 }
 
@@ -295,8 +302,11 @@ uint32_t NodeAlt::getNextLeafRBN() const
 
 uint32_t NodeAlt::getChildRBN(size_t index) const
 {
-    if(index > childRBNs.size())
-        return uint32_t(-1);
+    if(index >= childRBNs.size())
+    {
+         return uint32_t(-1);
+    }
+       
     return childRBNs[index];
 }
 

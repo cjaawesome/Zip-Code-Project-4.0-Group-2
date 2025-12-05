@@ -4,6 +4,10 @@
 #include "BPlusTreeHeaderAlt.h"
 #include <string>
 #include <cstring>
+#include <fstream>
+#include <vector>
+#include <cstring>
+#include <iostream>
 
 class BPlusTreeHeaderBufferAlt
 {
@@ -35,7 +39,7 @@ public:
      * @param bHeader the header being written
      * @returns true or false depending on if the header was write was successfully or not
      */
-    bool writeHeader(const std::string& filename, const BPlusTreeHeaderAlt& bHeader);
+    bool writeHeader(std::fstream& file, BPlusTreeHeaderAlt& bHeader);
     
     /**
      * @brief has error

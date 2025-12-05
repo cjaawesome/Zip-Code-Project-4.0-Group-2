@@ -1,8 +1,7 @@
 #ifndef BPLUSTREEHEADERALT_H
 #define BPLUSTREEHEADERALT_H
-#include "NodeAlt.h"
-#include "HeaderRecord.h"
-#include "BlockBuffer.h"
+
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -13,19 +12,19 @@ public:
      * @brief Default constructor
      * @details Initializes BPlusTreeHeader
      */
-    BPlusTreeHeaderAlt() = default;
+    BPlusTreeHeaderAlt();
     /**
      * @brief Destructor
      * @details Cleans up BPlusTreeHeader
      */
-    ~BPlusTreeHeaderAlt() = default;
+    ~BPlusTreeHeaderAlt();
 
     /**
      * @brief Serialize
      * @details Serializes the BPlusTreeHeader into a byte vector for storage
      * @returns a vector of bytes representing the serialized header
      */
-    std::vector<uint8_t> serialize() const;
+    std::vector<uint8_t> serialize();
     /**
      * @brief Deserialize
      * @details Deserializes a byte array into a BPlusTreeHeader object
@@ -133,9 +132,5 @@ private:
     uint32_t indexBlockCount; // Number of index blocks allocated
     uint32_t blockSize; // Block size (must match sequence set)
 };
-
-
-
-
 
 #endif // BPLUSTREEHEADERALT_H

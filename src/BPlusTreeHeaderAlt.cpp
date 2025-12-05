@@ -1,10 +1,12 @@
 #include "BPlusTreeHeaderAlt.h"
 
-#include "BPlusTreeHeader.h"
+BPlusTreeHeaderAlt::BPlusTreeHeaderAlt() : blockedFileName(""), height(0), rootIndexRBN(0),
+    headerSize(0), indexStartRBN(0), indexBlockCount(0), blockSize(0)
+{
+}
 
-BPlusTreeHeaderAlt::BPlusTreeHeaderAlt() : height(0), rootIndexRBN(0) {}
-
-BPlusTreeHeaderAlt::~BPlusTreeHeaderAlt(){
+BPlusTreeHeaderAlt::~BPlusTreeHeaderAlt()
+{
 }
 
 void BPlusTreeHeaderAlt::setBlockedFileName(const std::string& inFileName)
@@ -77,7 +79,7 @@ uint32_t  BPlusTreeHeaderAlt::getBlockSize() const
     return blockSize;
 }
 
-std::vector<uint8_t> BPlusTreeHeaderAlt::serialize() const
+std::vector<uint8_t> BPlusTreeHeaderAlt::serialize()
 {
     // Data Vector
     std::vector<uint8_t> data;
@@ -119,6 +121,8 @@ std::vector<uint8_t> BPlusTreeHeaderAlt::serialize() const
      // Calculate Header Size
     uint32_t trueHeaderSize = data.size();
     memcpy(&data[headerSizePos], &trueHeaderSize, sizeof(trueHeaderSize));
+
+    return data;
 }
 
 BPlusTreeHeaderAlt BPlusTreeHeaderAlt::deserialize(const uint8_t* data)

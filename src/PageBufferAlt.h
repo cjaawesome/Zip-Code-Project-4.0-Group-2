@@ -19,9 +19,14 @@ public:
     bool writeBlock(uint32_t rbn, const std::vector<uint8_t>& data);
     bool hasError() const;
 
+
+    void setFileName(const std::string& filename);
     void closeFile();
 
+    std::string getFileName() const;
     std::string getLastError() const;
+
+    std::fstream& getFileStream();
    
 private:
     std::fstream file;
@@ -30,6 +35,7 @@ private:
     bool isOpen;
     bool errorState;
     std::string lastError;
+    std::string fileName;
 
     void setError(const std::string& message);
 };

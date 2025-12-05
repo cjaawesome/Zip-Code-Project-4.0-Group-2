@@ -57,12 +57,6 @@ bool BPlusTreeAlt::isFileOpen() const
     return isOpen;
 }
 
-bool BPlusTreeAlt::buildFromSequenceSet()
-{
-    // To Do After Insert
-    return true;
-}
-
 bool BPlusTreeAlt::hasError() const
 {
     return errorState;
@@ -80,33 +74,14 @@ std::string BPlusTreeAlt::getLastError() const
 
 void BPlusTreeAlt::close()
 {
-    // Close Buffers
+    if (!isOpen)
+        return;
+    
+    BPlusTreeHeaderBufferAlt headerBuffer;
+    headerBuffer.writeHeader(indexPageBuffer.getFileStream(), treeHeader);
+    
     sequenceSetBuffer.closeFile();
     indexPageBuffer.closeFile();
-    isOpen = false;
-}
-
-void BPlusTreeAlt::convertIndexToBPlusTree(const std::vector<BlockIndexFile::IndexEntry>& indexEntries, const std::string& bPlusTreeFileName, uint32_t BlockSize)
-{
-    BPlusTreeHeaderBufferAlt bPlusTreeHeaderBuffer;
-    treeHeader.setBlockedFileName(bPlusTreeFileName);
-    treeHeader.setBlockSize(BlockSize);
-    treeHeader.setHeaderSize(sizeof(BPlusTreeHeaderAlt));
-
-    bPlusTreeHeaderBuffer.writeHeader(bPlusTreeFileName, treeHeader);
-
-    isOpen = true;
-    blockSize = BlockSize;
-    sequenceHeaderSize = sizeof(BPlusTreeHeaderAlt);
-
-    std::vector<BPlusTreeAlt::IndexEntry> entries;
-    for(const auto& idxEntry : indexEntries)
-    {
-        BPlusTreeAlt::IndexEntry entry = {idxEntry.key, idxEntry.recordRBN};
-        entries.push_back(entry);
-    }
-    buildTreeFromEntries(entries);
-    
     isOpen = false;
 }
 
@@ -151,7 +126,6 @@ uint32_t BPlusTreeAlt::allocateTreeBlock()
 {
     // Get Updated Index Block Count
     uint32_t newRBN = treeHeader.getIndexBlockCount() + 1;
-    // Update Index Block Count
     treeHeader.setIndexBlockCount(newRBN);
     return newRBN;
 }
@@ -178,7 +152,7 @@ bool BPlusTreeAlt::search(uint32_t key, uint32_t& outValue)
         }   
     }
     delete leaf;
-    return true;
+    return false;
 }
 
 uint32_t BPlusTreeAlt::findLeafRBN(uint32_t key)
@@ -242,7 +216,10 @@ bool BPlusTreeAlt::buildFromSequenceSet()
         }
         currentRBN = block.succeedingRBN;
     }
-    return buildTreeFromEntries(entries);
+
+    bool result = buildTreeFromEntries(entries);
+
+    return result;
 }
 
 bool BPlusTreeAlt::buildTreeFromEntries(const std::vector<IndexEntry>& entries)
@@ -285,11 +262,18 @@ std::vector<uint32_t> BPlusTreeAlt::buildLeafLevel(const std::vector<IndexEntry>
             leaf.setPrevLeafRBN(leafRBNs.back());
         
         uint32_t leafRBN =  allocateTreeBlock();
-        writeNode(leafRBN, leaf);
+        if (!writeNode(leafRBN, leaf))
+        {
+            return {}; 
+        };
 
         if(!leafRBNs.empty())
         {
             NodeAlt* prevLeaf = loadNode(leafRBNs.back());
+            if(prevLeaf == nullptr)
+            {
+                return {}; 
+            }
             prevLeaf->setNextLeafRBN(leafRBN);
             writeNode(leafRBNs.back(), *prevLeaf);
             delete prevLeaf;
@@ -324,12 +308,6 @@ std::vector<uint32_t> BPlusTreeAlt::buildIndexLevel(const std::vector<uint32_t>&
         parentRBNs.push_back(parentRBN);
     }
     return parentRBNs;
-}
-
-void BPlusTreeHeaderBufferAlt::setError(const std::string& message)
-{
-    errorState = true;
-    lastError = message;
 }
 
 void BPlusTreeAlt::printNode(uint32_t rbn, int depth)
@@ -413,7 +391,7 @@ uint32_t BPlusTreeAlt::splitNode(uint32_t nodeRBN, uint32_t& promotedKey)
         while (node->getKeyCount() > splitIndex)
         {
             node->removeKeyAt(node->getKeyCount() - 1);
-            node->removeValueAt(node->getKeyCount());
+            node->removeValueAt(node->getKeyCount() - 1);
         }
     }
     else

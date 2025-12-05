@@ -71,7 +71,7 @@ public:
      */
     uint32_t findRBNForKey(const uint32_t zipCode) const;
 
-    void convertIndexToBPlusTree(const std::string& bPlusTreeFileName, uint32_t blockSize);
+   // void convertIndexToBPlusTree(const std::string& bPlusTreeFileName, uint32_t blockSize);
 
 
 private:

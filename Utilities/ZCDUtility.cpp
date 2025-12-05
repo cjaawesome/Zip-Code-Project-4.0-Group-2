@@ -32,6 +32,8 @@ void printUsage(const char* programName)
               << "    " << programName << " verify <input.csv> <input.zcd>\n\n"
               << "  Search using index (no full scan):\n"
               << "    " << programName << " zcd-search <input.zcd> <zipcode_data.idx> <zip> [<zip> ...]\n\n"
+              << "  Create B+ Tree index from Block Index:\n"
+            << "    " << programName << " bplus-from-block-index <block_index.idx> <bplus_tree.idx> <input.zcb>\n\n"
               << "Examples:\n"
               << "  " << programName << " convert PT2_CSV.csv output.zcd\n"
               << "  " << programName << " convert-blocked PT2_CSV.csv output.zcb\n"
@@ -39,8 +41,8 @@ void printUsage(const char* programName)
               << "  " << programName << " read output.zcd 10\n"
               << "  " << programName << " header output.zcd\n"
               << "  " << programName << " verify PT2_CSV.csv output.zcd\n"
-              << "  " << programName << " zcd-search output.zcd zipcode_data.idx 55455 30301\n";
-
+              << "  " << programName << " zcd-search output.zcd zipcode_data.idx 55455 30301\n"
+              << "  " << programName << " bplus-from-block-index block_index.idx bplus_tree.idx output.zcb\n";
 }
 
 bool createBPlusTreeIndexFromBlockIndex(const std::string& blockIndexFileName, 
@@ -341,6 +343,256 @@ bool convertCSVToBlockedSequenceSet(const std::string& csvFile, const std::strin
     return true;
 }
 
+bool convertCSVToBlockedSequenceNoIndex(const std::string& csvFile, const std::string& zcbFile, 
+                                    uint32_t blockSize = 1024, uint16_t minBlockSize = 256)
+{
+    CSVBuffer csvBuffer;
+    if(!csvBuffer.openFile(csvFile))
+    {
+        std::cerr << "Failed to open CSV file." << std::endl;
+        return false;
+    }
+
+    std::vector<ZipCodeRecord> allRecords;
+    ZipCodeRecord record;
+    while(csvBuffer.getNextRecord(record))
+    {
+        allRecords.push_back(record);
+    }
+
+    std::cout << "Read " << allRecords.size() << " records." << std::endl;
+
+    std::sort(allRecords.begin(), allRecords.end(),
+                [](const ZipCodeRecord& a, const ZipCodeRecord& b)
+            {
+                return a.getZipCode() < b.getZipCode();
+            });
+
+    csvBuffer.closeFile();
+
+    std:: cout << "Sorted records by ZipCode." << std::endl;
+
+    HeaderRecord header;
+
+    header.setFileStructureType("ZIPC");
+    header.setVersion(2);
+    header.setHeaderSize(0); // Set In Serialization Process
+    header.setSizeFormatType(0);
+    header.setBlockSize(blockSize);
+    header.setMinBlockSize(minBlockSize);
+    header.setIndexFileName("data/zipcode_data.idx"); // Placeholder
+    header.setIndexFileSchemaInfo("Primary Key: Zipcode"); // Placeholder
+    header.setRecordCount(allRecords.size()); // This will need to be tracked and updated after if sorting changes
+    header.setBlockCount(0); // Update After Conversion
+    
+    std::vector<FieldDef> fields;
+    fields.push_back({"zipcode", 1});
+    fields.push_back({"location", 3});
+    fields.push_back({"state", 4});
+    fields.push_back({"county", 3});
+    fields.push_back({"latitude", 2});
+    fields.push_back({"longitude", 2});
+    
+    header.setFields(fields);
+    header.setFieldCount(csvBuffer.EXPECTED_FIELD_COUNT);
+    header.setPrimaryKeyField(0);
+    header.setAvailableListRBN(0); 
+    header.setSequenceSetListRBN(1); 
+    header.setStaleFlag(0);
+
+    std::ofstream out(zcbFile, std::ios::binary);
+    if (!out.is_open()) 
+    {
+        std::cerr << "Error: Cannot create output file: " << zcbFile << std::endl;
+        return false;
+    }
+    
+    auto headerData = header.serialize();
+    header.setHeaderSize(headerData.size());
+    
+    out.write(reinterpret_cast<char*>(headerData.data()), headerData.size());
+    out.close();
+    
+    size_t blockCountOffset = 4 + 2 + 4 + 1 + 4 + 2 + 2 + 
+                         header.getIndexFileName().length() + 
+                         2 + header.getIndexFileSchemaInfo().length() + 
+                         sizeof(uint32_t);
+    
+    std::cout << "Converting " << csvFile << " to " << zcbFile << "..." << std::endl;
+
+    RecordBuffer recordBuffer;
+    BlockBuffer blockBuffer;
+
+    if(!blockBuffer.openFile(zcbFile, header.getHeaderSize()))
+    {
+        std::cerr << "Failed to open block buffer." << std::endl;    
+    }
+
+    uint32_t currentRBN = 1;
+    uint32_t blockCount = 0;
+    std::vector<ZipCodeRecord> currentBlockRecords;
+    size_t currentSize = 10;  // metadata
+
+    for(const auto& rec : allRecords)
+    {
+        // Check if adding this record would overflow
+        if (currentSize + rec.getRecordSize() + 4 > blockSize)
+        {
+            // Write current block
+            ActiveBlock block;
+            block.precedingRBN = (currentRBN == 1) ? 0 : currentRBN - 1;
+            block.succeedingRBN = currentRBN + 1;  // Temp - will fix last block later
+            block.recordCount = static_cast<uint16_t>(currentBlockRecords.size());
+            
+            recordBuffer.packBlock(currentBlockRecords, block.data, blockSize);
+            blockBuffer.writeActiveBlockAtRBN(currentRBN, blockSize, header.getHeaderSize(), block);
+            
+            ++blockCount;
+            ++currentRBN;
+            currentBlockRecords.clear();
+            currentSize = 10;  // Reset to metadata size
+        }
+      
+        // Add record to current block
+        currentBlockRecords.push_back(rec);
+        currentSize += rec.getRecordSize() + 4;
+    }
+
+    // Write final block
+    if (!currentBlockRecords.empty())
+    {
+        ActiveBlock block;
+        block.precedingRBN = (currentRBN == 1) ? 0 : currentRBN - 1;
+        block.succeedingRBN = 0;  // Last block
+        block.recordCount = static_cast<uint16_t>(currentBlockRecords.size());
+        
+        recordBuffer.packBlock(currentBlockRecords, block.data, blockSize);
+        blockBuffer.writeActiveBlockAtRBN(currentRBN, blockSize, header.getHeaderSize(), block);
+        
+        ++blockCount;
+    }
+
+    blockBuffer.closeFile();
+
+    std::fstream updateFile(zcbFile, std::ios::binary | std::ios::in | std::ios::out);
+    updateFile.seekp(blockCountOffset);
+    updateFile.write(reinterpret_cast<char*>(&blockCount), sizeof(uint32_t));
+    updateFile.close();
+
+    return true;
+}
+
+bool convertBlockedSequenceSetToBPlusTree(const std::string& idxFile, const std::string& zcbFile)
+{
+    HeaderBuffer seqHeaderBuffer;
+    HeaderRecord seqHeader;
+
+    if(!seqHeaderBuffer.readHeader(zcbFile, seqHeader))
+    {
+        std::cerr << "Failed To Read Header From " << zcbFile << std::endl;
+        return false;
+    }
+
+    std::cout << "Creating B+ Tree Index From Blocked Sequence Set File." << std::endl;
+
+    std::vector<IndexEntry> indexEntries;
+
+    BlockBuffer blockBuffer;
+    RecordBuffer recordBuffer;
+
+    if(!blockBuffer.openFile(zcbFile, seqHeader.getHeaderSize()))
+    {
+        std::cerr << "Failed To Open Block Buffer." << std::endl;
+        return false;
+    }
+
+    uint32_t currentRBN = seqHeader.getSequenceSetListRBN();
+    while(currentRBN != 0)
+    {
+        ActiveBlock block = blockBuffer.loadActiveBlockAtRBN(currentRBN, seqHeader.getBlockSize(), 
+                                                                seqHeader.getHeaderSize());
+
+        std::vector<ZipCodeRecord> records;
+        recordBuffer.unpackBlock(block.data, records);
+
+        if(!records.empty())
+        {
+            IndexEntry entry;
+            entry.key = records.back().getZipCode();
+            entry.blockRBN = currentRBN;
+            indexEntries.push_back(entry);
+        }
+        currentRBN = block.succeedingRBN;
+    }
+
+    blockBuffer.closeFile();
+
+    std::cout << "Scanned " << indexEntries.size() << " blocks from sequence set" << std::endl;
+
+    BPlusTreeHeaderAlt treeHeader;
+    treeHeader.setBlockedFileName(zcbFile);
+    treeHeader.setBlockSize(seqHeader.getBlockSize());
+    treeHeader.setHeight(0);
+    treeHeader.setRootIndexRBN(0);
+
+    std::ofstream out(idxFile, std::ios::binary);
+    if (!out.is_open())
+    {
+        std::cerr << "Error: Cannot create index file: " << idxFile << std::endl;
+        return false;
+    }
+    
+    auto headerData = treeHeader.serialize();
+    treeHeader.setHeaderSize(headerData.size());
+
+    out.write(reinterpret_cast<char*>(headerData.data()), headerData.size());
+    out.close();
+
+    BPlusTreeAlt tree;
+
+    if(!tree.open(idxFile, zcbFile))
+    {
+        std::cerr << "Failed To Open B+ Tree." << std::endl;
+        return false;
+    }
+
+    if(!tree.buildFromSequenceSet())
+    {
+        std::cerr << "Failed To Build B+ Tree From Sequence Set." << std::endl;
+        return false;
+    }
+
+    std::cout << "B+ Tree Index Successfully Created." << std::endl;
+    tree.close();
+
+    std::fstream seqFile(zcbFile, std::ios::binary | std::ios::in | std::ios::out);
+    uint8_t staleFlag = 0;
+    size_t flagOffset = seqHeader.getHeaderSize() - 1;
+
+    seqFile.seekp(flagOffset);
+    seqFile.write(reinterpret_cast<char*>(&staleFlag), sizeof(uint8_t));
+    seqFile.close();
+
+    return true; 
+}
+
+bool convertBlockedSequenceSetToBPlusTree(const std::string csvFile, const std::string& idxFile, const std::string& zcbFile)
+{
+    if(!convertCSVToBlockedSequenceNoIndex(csvFile, zcbFile))
+    {
+        std::cerr << "Failed To Convert CSV To Blocked Sequence Set." << std::endl;
+        return false;
+    }
+
+    if(!convertBlockedSequenceSetToBPlusTree(idxFile, zcbFile))
+    {
+        std::cerr << "Failed To Convert Blocked Sequence Set To B+ Tree." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 bool readZCD(const std::string& inFile, int displayCount) 
 {
     HeaderRecord header;
@@ -483,6 +735,15 @@ int main(int argc, char* argv[])
         }
         return displayHeader(argv[2]) ? 0 : 1;
     }
+    else if (command == "convert-b+tree")
+    {
+        if (argc != 5) {
+            std::cerr << "Error: convert-bplus-tree requires csv input, index output, and blocked sequence set output filenames\n";
+            printUsage(argv[0]);
+            return 1;
+        }
+        return convertBlockedSequenceSetToBPlusTree(argv[2], argv[3], argv[4]) ? 0 : 1;
+    }
     else if (command == "verify") 
     {
     if (argc != 4) {
@@ -541,7 +802,6 @@ int main(int argc, char* argv[])
     }
     return 0;
     }
-
     else 
     {
         std::cerr << "Error: Unknown command '" << command << "'\n";

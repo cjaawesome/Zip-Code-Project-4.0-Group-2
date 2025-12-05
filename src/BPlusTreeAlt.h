@@ -3,7 +3,6 @@
 
 #include "HeaderBuffer.h"
 #include "BlockBuffer.h"
-#include "BlockIndexFile.h"
 #include "BPlusTreeHeaderBufferAlt.h"
 #include "NodeAlt.h"
 #include "PageBufferAlt.h"
@@ -11,6 +10,12 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+
+struct IndexEntry
+    {
+        uint32_t key;
+        uint32_t blockRBN;
+    };
 
 class BPlusTreeAlt
 {
@@ -34,7 +39,7 @@ public:
     void printTree();
     void close();
 
-    void convertIndexToBPlusTree(const std::vector<BlockIndexFile::IndexEntry>& indexEntries, const std::string& bPlusTreeFileName, uint32_t blockSize);
+    //void convertIndexToBPlusTree(const std::vector<BlockIndexFile::IndexEntry>& indexEntries, const std::string& bPlusTreeFileName, uint32_t blockSize);
 
 private:
     bool isOpen; // Is the B+ tree file open (redundant with PageBufferAlt?)
@@ -51,12 +56,6 @@ private:
 
     uint32_t sequenceHeaderSize; // Cahced header size for convenience
     uint32_t blockSize; // Cahced block size for convenience
-
-    struct IndexEntry
-    {
-        uint32_t key;
-        uint32_t blockRBN;
-    };
 
     NodeAlt* loadNode(uint32_t rbn);
     
