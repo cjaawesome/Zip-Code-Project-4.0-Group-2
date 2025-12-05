@@ -531,3 +531,142 @@ void BPlusTreeAlt::insertIntoIndex(NodeAlt* node, uint32_t key, uint32_t childRB
     node->insertKeyAt(index, key);
     node->insertChildRBN(index + 1, childRBN);
 }
+
+bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, bool& underflow)
+{
+    NodeAlt* node = loadNode(nodeRBN);
+
+    if(node == nullptr)
+    {
+        setError("Failed to load node during removal.");
+        return false;
+    }
+
+    if(node->isLeafNode() == 1)
+    {
+        size_t index = 0;
+        while(index < node->getKeyCount() && node->getKeyAt(index) < key)
+        {
+            ++index;
+        }
+        if(index < node->getKeyCount() && node->getKeyAt(index) == key)
+        {
+            node->removeKeyAt(index);
+            node->removeValueAt(index);
+            writeNode(nodeRBN, *node);
+            underflow = node->isUnderfull();
+            delete node;
+            return true;
+        }
+        else
+        {
+            delete node;
+            setError("Key not found for removal.");
+            return false;
+        }
+    }
+    else
+    {
+        // Index node removal logic to be implemented
+    }
+}
+
+bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent, bool isLeaf)
+{
+    NodeAlt* node = loadNode(nodeRBN);
+
+    if(node == nullptr)
+    {
+        setError("Failed to load node during borrow.");
+        return false;
+    }
+
+    NodeAlt* parent = loadNode(parentRBN);
+    if(parent == nullptr)
+    {
+        delete node;
+        setError("Failed to load parent node during borrow.");
+        return false;
+    }
+
+    size_t minKeys = (node->getMaxKeys() + 1) / 2;
+
+    if(node->isLeafNode() == 1)
+    {
+        if(indexInParent < parent->getChildCount() - 1)
+        {
+            uint32_t rightSiblingRBN = parent->getChildRBN(indexInParent + 1);
+            NodeAlt* rightSibling = loadNode(rightSiblingRBN);
+            
+            if(rightSibling != nullptr && rightSibling->getKeyCount() > minKeys)
+            {
+                // Borrow first value from right sibling
+                uint32_t borrowedKey = rightSibling->getKeyAt(0);
+                uint32_t borrowedValue = rightSibling->getValueAt(0);
+
+                // Remove key & value from
+                rightSibling->removeKeyAt(0);
+                rightSibling->removeValueAt(0);
+
+                // Add to current node
+                node->insertKeyAt(node->getKeyCount(), borrowedKey);
+                node->insertValueAt(node->getKeyCount(), borrowedValue);
+
+                // Update parent seperator key
+                // Parent key at indexInParent seperates this node from right sibling
+                // Set it to the highest key in the current node
+                parent->setKeyAt(indexInParent, node->getKeyAt(node->getKeyCount() - 1));
+
+                writeNode(nodeRBN, *node);
+                writeNode(rightSiblingRBN, *rightSibling);
+                writeNode(parentRBN, *parent);
+
+                delete node;
+                delete rightSibling;
+                delete parent;
+                return true;
+            }
+            delete rightSibling;
+        }
+
+        if(indexInParent > 0)
+        {
+            uint32_t leftSiblingRBN = parent->getChildRBN(indexInParent - 1);
+            NodeAlt* leftSibling = loadNode(leftSiblingRBN);
+
+            if(leftSibling != nullptr && leftSibling->getKeyCount() > minKeys)
+            {
+                // Borrow last key & value from left sibling
+                uint32_t borrowedKey = leftSibling->getKeyAt(leftSibling->getKeyCount() - 1);
+                uint32_t borrowedValue = leftSibling->getValueAt(leftSibling->getKeyCount() - 1);
+
+                // Remove key & value from left sibling
+                leftSibling->removeKeyAt(leftSibling->getKeyCount() - 1);
+                leftSibling->removeValueAt(leftSibling->getKeyCount() - 1);
+
+                // Add to beginning of current node
+                node->insertKeyAt(0, borrowedKey);
+                node->insertValueAt(0, borrowedValue);
+
+                // Update parent seperator key
+                // Parent key at indexInParent - 1
+                // Set it to the highest key in left sibling after removal
+                parent->setKeyAt(indexInParent - 1, leftSibling->getKeyAt(leftSibling->getKeyCount() - 1));
+
+                writeNode(nodeRBN, *node);
+                writeNode(leftSiblingRBN, *leftSibling);
+                writeNode(parentRBN, *parent);
+
+                delete node;
+                delete leftSibling;
+                delete parent;
+                return true;
+            }
+            delete leftSibling;
+        }
+    }
+    else
+    {
+        // Index Node
+    }
+}

@@ -81,7 +81,7 @@ bool convertCSVtoZCD(const std::string& inFile, const std::string& outFile)
     header.setBlockSize(512); // Placeholder
     header.setMinBlockSize(256); // Placeholder
     header.setIndexFileName("zipcode_data.idx");
-    header.setIndexFileSchemaInfo("Primary Key: Zipcode"); // Placeholder. Binary defeats the purpose of this.
+    header.setIndexFileSchemaInfo("Primary Key: Zipcode"); 
     header.setRecordCount(0);
     
     std::vector<FieldDef> fields;
