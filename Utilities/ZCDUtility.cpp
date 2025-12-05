@@ -45,30 +45,7 @@ void printUsage(const char* programName)
               << "  " << programName << " bplus-from-block-index block_index.idx bplus_tree.idx output.zcb\n";
 }
 
-bool createBPlusTreeIndexFromBlockIndex(const std::string& blockIndexFileName, 
-                                    const std::string& bPlusTreeFileName, const std::string& zcbFileName)
-{
-    //none functional yet
-    BlockIndexFile blockIndex;
 
-    HeaderBuffer headerBuffer;
-    HeaderRecord header;
-    if(!headerBuffer.readHeader(zcbFileName, header))
-    {
-        std::cerr << "Failed To Read Header From " << zcbFileName << std::endl;
-        return false;
-    }
-    if(!blockIndex.read(blockIndexFileName))
-    {
-        std::cerr << "Failed To Read Block Index From " << blockIndexFileName << std::endl;
-        return false;
-    }
-
-    header.getBlockSize();
-
-
-    blockIndex.createIndexFromBlockedFile(blockIndexFileName, header.getBlockSize(), header.getHeaderSize(), header.getSequenceSetListRBN());
-}
 
 bool convertCSVtoZCD(const std::string& inFile, const std::string& outFile) 
 {
