@@ -35,6 +35,9 @@ public:
     std::string getLastError() const;
 
     uint32_t findLeafRBN(uint32_t key);
+    uint32_t searchRecursive(uint32_t nodeRBN, uint32_t key);
+
+    std::vector<uint32_t> searchRange(const uint32_t keyStart, const uint32_t keyEnd);
 
     void printTree();
     void close();
@@ -59,7 +62,6 @@ private:
 
     NodeAlt* loadNode(uint32_t rbn);
     
-    uint32_t searchRecursive(uint32_t nodeRBN, uint32_t key);
     uint32_t splitNode(uint32_t nodeRBN, uint32_t& promotedKey);
     uint32_t allocateTreeBlock();
     uint32_t rangeSearch(uint32_t nodeRBN, uint32_t key);
@@ -82,8 +84,6 @@ private:
 
     std::vector<uint32_t> buildLeafLevel(const std::vector<IndexEntry>& entries);
     std::vector<uint32_t> buildIndexLevel(const std::vector<uint32_t>& childRBNs);
-    std::vector<uint32_t> searchRange(const uint32_t keyStart, const uint32_t keyEnd);
-
 };
 
 #endif
