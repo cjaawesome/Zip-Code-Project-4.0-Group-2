@@ -69,8 +69,8 @@ private:
                                     uint32_t& newChildRBN, uint32_t& newPromotedKey);
     bool removeRecursive(uint32_t nodeRBN, uint32_t key, bool& underflow);
 
-    bool borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent, bool isLeaf);
-    bool mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent, bool isLeaf);
+    bool borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent);
+    bool mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent);
 
     void setError(const std::string& message);
     void freeIndexBlock(uint32_t rbn);

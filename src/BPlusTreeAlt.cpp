@@ -571,7 +571,7 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, bool& underfl
     }
 }
 
-bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent, bool isLeaf)
+bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent)
 {
     NodeAlt* node = loadNode(nodeRBN);
 
@@ -667,6 +667,343 @@ bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_
     }
     else
     {
-        // Index Node
+        if(indexInParent < parent->getChildCount() - 1)
+        {
+            uint32_t rightSiblingRBN = parent->getChildRBN(indexInParent + 1);
+            NodeAlt* rightSibling = loadNode(rightSiblingRBN);
+
+            if(rightSibling != nullptr && rightSibling->getKeyCount() > minKeys)
+            {
+                // Move parent seperator key down & bring up right sibling key.
+                uint32_t parentKey = parent->getKeyAt(indexInParent);
+                uint32_t rightFirstKey = rightSibling->getKeyAt(0);
+                uint32_t rightFirstChild = rightSibling->getChildRBN(0);
+
+                // Add parent key and right first child key
+                node->insertKeyAt(node->getKeyCount(), parentKey);
+                node->insertChildRBN(node->getChildCount(), rightFirstChild);
+
+                // Remove first key and child
+                rightSibling->removeKeyAt(0);
+                rightSibling->removeChildRBN(0);
+
+                // Push right first key up to parent
+                parent->setKeyAt(indexInParent, rightFirstKey);
+
+                writeNode(nodeRBN, *node);
+                writeNode(rightSiblingRBN, *rightSibling);
+                writeNode(parentRBN, *parent);
+
+                delete node;
+                delete rightSibling;
+                delete parent;
+                return true;
+            }
+            delete rightSibling;
+        }
     }
+
+    if(indexInParent > 0)
+    {
+        uint32_t leftSiblingRBN = parent->getChildRBN(indexInParent - 1);
+        NodeAlt* leftSibling = loadNode(leftSiblingRBN);
+
+        if(leftSibling != nullptr && leftSibling->getKeyCount() > minKeys)
+        {
+            // Bring down seperator key & push up left sibling key
+            uint32_t parentKey = parent->getKeyAt(indexInParent - 1);
+            uint32_t leftLastKey = leftSibling->getKeyAt(leftSibling->getKeyCount() - 1);
+            uint32_t leftLastChild = leftSibling->getChildRBN(leftSibling->getChildCount() - 1);
+
+            // Add pareny key and left last child
+            node->insertKeyAt(0, parentKey);
+            node->insertChildRBN(0, leftLastChild);
+
+            // Remove last key and child
+            leftSibling->removeKeyAt(leftSibling->getKeyCount() - 1);
+            leftSibling->removeKeyAt(leftSibling->getChildCount() - 1);
+
+            // Add left last key to parent
+            parent->setKeyAt(indexInParent - 1, leftLastKey);
+
+            writeNode(nodeRBN, *node);
+            writeNode(leftSiblingRBN, *leftSibling);
+            writeNode(parentRBN, *parent);
+
+            delete node;
+            delete leftSibling;
+            delete parent;
+            return true;
+        }
+        delete leftSibling;
+    }
+
+    delete node;
+    delete parent;
+    return false;
+}
+
+bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent)
+{
+    NodeAlt* node = loadNode(nodeRBN);
+
+    if(node == nullptr)
+    {
+        setError("Failed to load node in merge with sibling.");
+        return false;
+    }
+
+    NodeAlt* parent = loadNode(parentRBN);
+
+    if(parent == nullptr)
+    {
+        setError("Failed to load parent node in merge with sibling.");
+        delete node;
+        return false;
+    }
+
+    bool success = false;
+    uint32_t rbnToReturn = 0;
+
+    if(node->isLeafNode() == 1)
+    {
+        uint32_t rightSiblingRBN = node->getNextLeafRBN();
+        NodeAlt* rightSibling = loadNode(rightSiblingRBN);
+
+        size_t startIndex = node->getKeyCount();
+
+        if(rightSibling != nullptr && (node->getKeyCount() + rightSibling->getKeyCount()) <= node->getMaxKeys())
+        {
+            for(size_t i = 0; i < rightSibling->getKeyCount(); ++i)
+            {
+                node->insertKeyAt(startIndex + i, rightSibling->getKeyAt(i));
+                node->insertValueAt(startIndex + i, rightSibling->getValueAt(i));
+            }
+
+            node->setNextLeafRBN(rightSibling->getNextLeafRBN());
+            parent->removeKeyAt(indexInParent);
+            parent->removeChildRBN(indexInParent + 1);
+
+            if(rightSibling->getNextLeafRBN() != 0)
+            {
+                uint32_t oneDivorcedSiblingRBN = rightSibling->getNextLeafRBN();
+                NodeAlt* oneDivorcedSibling = loadNode(oneDivorcedSiblingRBN);
+                if(oneDivorcedSibling != nullptr)
+                {
+                    oneDivorcedSibling->setPrevLeafRBN(nodeRBN);
+                    writeNode(oneDivorcedSiblingRBN, *oneDivorcedSibling);
+                    delete oneDivorcedSibling;
+                }
+            }
+
+            // One divorced already written & right sibling is dead node
+            writeNode(nodeRBN, *node);
+            writeNode(parentRBN, *parent);
+            delete rightSibling;
+            success = true;  
+        }
+        else
+        {
+            delete rightSibling;
+        }
+
+        if(!success)
+        {
+            uint32_t leftSiblingRBN = node->getPrevLeafRBN();
+            NodeAlt* leftSibling = loadNode(leftSiblingRBN);
+
+            size_t leftStartIndex = leftSibling->getKeyCount();
+
+            if(leftSibling != nullptr && (node->getKeyCount() + leftSibling->getKeyCount()) <= node->getMaxKeys())
+            {
+                for(size_t i = 0; i < node->getKeyCount(); ++i)
+                {
+                    leftSibling->insertKeyAt(leftStartIndex + i, node->getKeyAt(i));
+                    leftSibling->insertValueAt(leftStartIndex + i, node->getValueAt(i));
+                }
+                    leftSibling->setNextLeafRBN(node->getNextLeafRBN());
+                    parent->removeKeyAt(indexInParent - 1);
+                    parent->removeChildRBN(indexInParent);
+
+
+                if(node->getNextLeafRBN() != 0)
+                {
+                    uint32_t oneDivorcedSiblingRBN = node->getNextLeafRBN();
+                    NodeAlt* oneDivorcedSibling = loadNode(oneDivorcedSiblingRBN);
+
+                    if(oneDivorcedSibling != nullptr)
+                    {
+                        oneDivorcedSibling->setPrevLeafRBN(node->getPrevLeafRBN());
+                        writeNode(oneDivorcedSiblingRBN, *oneDivorcedSibling);
+                        delete oneDivorcedSibling;        
+                    }
+                }
+
+                // One divorced sibling already written & node is dead
+                writeNode(leftSiblingRBN, *leftSibling);
+                writeNode(parentRBN, *parent);
+                delete node;
+                delete leftSibling;
+                node = nullptr;
+
+                success = true;
+                rbnToReturn = leftSiblingRBN;
+            }
+            else
+            {
+                delete leftSibling;
+            }
+        }      
+    }
+    else
+    {
+        if(indexInParent + 1 < parent->getChildCount())
+        {
+            uint32_t rightSiblingRBN = parent->getChildRBN(indexInParent + 1);
+            if(rightSiblingRBN != 0)
+            {
+                NodeAlt* rightSibling = loadNode(rightSiblingRBN);
+
+                // Get separator key from the parent node
+                uint32_t separatorKey = parent->getKeyAt(indexInParent);
+
+                // Check if room for adjacent keys and separator key
+                if(rightSibling != nullptr && node->getKeyCount() + rightSibling->getKeyCount() + 1 <= node->getMaxKeys())
+                {
+                    // Add separator key to the node at the end of keys
+                    node->insertKeyAt(node->getKeyCount(), separatorKey);
+
+                    // Move keys
+                    for (size_t i = 0; i < rightSibling->getKeyCount(); ++i)
+                    {
+                        node->insertKeyAt(node->getKeyCount(), rightSibling->getKeyAt(i));
+                    }
+
+                    // Move children
+                    for(size_t i = 0; i < rightSibling->getChildCount(); ++i)
+                    {
+                        node->insertChildRBN(node->getChildCount(), rightSibling->getChildRBN(i));
+                    }
+
+                    parent->removeKeyAt(indexInParent);
+                    parent->removeChildRBN(indexInParent + 1);
+
+                    writeNode(nodeRBN, *node);
+                    writeNode(parentRBN, *parent);
+
+                    delete rightSibling;
+                    success = true;
+                }
+                else
+                {
+                    delete rightSibling;
+                }
+                    
+            }
+        }
+        
+        if(!success && indexInParent > 0)
+        {
+            uint32_t leftSiblingRBN = parent->getChildRBN(indexInParent - 1);
+            if(leftSiblingRBN != 0)
+            {
+                NodeAlt* leftSibling = loadNode(leftSiblingRBN);
+
+                uint32_t separatorKey = parent->getKeyAt(indexInParent - 1);
+
+                if(leftSibling != nullptr && node->getKeyCount() + leftSibling->getKeyCount() + 1 <= node->getMaxKeys())
+                {
+                    leftSibling->insertKeyAt(leftSibling->getKeyCount(), separatorKey);
+
+                    for(size_t i = 0; i < node->getKeyCount(); ++i)
+                    {
+                        leftSibling->insertKeyAt(leftSibling->getKeyCount(), node->getKeyAt(i));
+                    }
+
+                    for(size_t i = 0; i < node->getChildCount(); ++i)
+                    {
+                        leftSibling->insertChildRBN(leftSibling->getChildCount(), node->getChildRBN(i));
+                    }
+
+                    parent->removeKeyAt(indexInParent - 1);
+                    parent->removeChildRBN(indexInParent);
+
+                    writeNode(leftSiblingRBN, *leftSibling);
+                    writeNode(parentRBN, *parent);
+
+                    delete node;
+                    delete leftSibling;
+                    node = nullptr;
+
+                    success = true;
+                    rbnToReturn = leftSiblingRBN;
+                }
+                else
+                {
+                    delete leftSibling;
+                }
+            }
+        }
+    }
+    // Clean up and parent checks
+    if (success)
+    {
+        // Check if parent is underfull
+        if (parent->isUnderfull())
+        {
+            // Parent is underfull recursive call
+            if (parent->getParentRBN() != 0)
+            {
+                uint32_t grandparentRBN = parent->getParentRBN();
+                NodeAlt* grandparent = loadNode(grandparentRBN);
+
+                if(grandparent != nullptr)
+                {
+                    size_t parentIndexInGrandparent = 0;
+                    for(size_t i = 0; i < grandparent->getChildCount(); ++i)
+                    {
+                        if(grandparent->getChildRBN(i) == parentRBN)
+                        {
+                            parentIndexInGrandparent = i;
+                            break;
+                        }
+                    }
+                        
+                    // Clean up before recursive call
+                    if (node)
+                        delete node;
+                    delete parent;
+                    delete grandparent;
+                        
+                    // Recursive update
+                    return mergeWithSibling(parentRBN, grandparentRBN, parentIndexInGrandparent);
+                }
+                else 
+                {
+                    setError("Failed to load grandparent RBN during recursive merge check.");
+                }
+            }
+            else 
+            {
+            if (parent->getKeyCount() == 0)
+                {
+                    // Update root
+                    treeHeader.setRootIndexRBN((node == nullptr) ? rbnToReturn : nodeRBN); 
+                    treeHeader.setHeight(treeHeader.getHeight() - 1);
+                }
+            }
+        }
+            
+        // Clean up
+        if (node) 
+            delete node;
+        delete parent;
+        return true;
+    }
+    // Clean up
+    if (node) 
+        delete node;
+    if (parent) 
+        delete parent;
+    return false;
 }
