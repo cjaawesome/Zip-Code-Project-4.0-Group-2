@@ -36,7 +36,6 @@ public:
     
 private:
     std::string fileName;
-    BlockIndexFile blockIndexFile;
     BPlusTreeAlt bPlusTree;
     bool fileLoaded = false;
 

@@ -103,18 +103,7 @@ bool ZipSearchApp::process(int argc, char* argv[]){
     for (int i = 1; i < argc; ++i) {
         try {
             if(argv[i] == FILE_ARG){
-                fileName = argv[++i];
-
-                //read header and set variables
-                if (!headerBuffer.readHeader(fileName, header)) {
-                    std::cerr << "Failed to read header from " << fileName << std::endl;
-                    return false;
-                }
-                if(!indexHandler(header)){ 
-                    std::cerr << "Failed to handle index for " << fileName << std::endl;
-                    return false;
-                }
-                fileLoaded = true;
+                setDataFile(argv[++i]);
                 headerSize = header.getHeaderSize();
                 blockSize = header.getBlockSize();
                 sequenceSetHead = header.getSequenceSetListRBN();
@@ -200,7 +189,7 @@ bool ZipSearchApp::process(int argc, char* argv[]){
 
 bool ZipSearchApp::search(uint32_t zip, uint32_t blockSize, uint32_t headerSize, ZipCodeRecord& outRecord){
     //**searches for a zip code in the blocked file */
-    uint32_t rbn = blockIndexFile.findRBNForKey(zip);
+    uint32_t rbn = bPlusTree.findLeafRBN(zip);
     if (rbn == static_cast<uint32_t>(-1)) {
         std::cout << "Zip code " << zip << " not found." << std::endl;
         return false;
@@ -229,7 +218,7 @@ bool ZipSearchApp::add(const ZipCodeRecord zip, HeaderRecord& header){
     uint32_t availListRBN = header.getAvailableListRBN();
 
     blockBuffer.resetSplit();
-    uint32_t rbn = blockIndexFile.findRBNForKey(zip.getZipCode());
+    uint32_t rbn = bPlusTree.findLeafRBN(zip.getZipCode());
     
     if(!blockBuffer.addRecord(rbn, header.getBlockSize(), availListRBN, zip, 
                             header.getHeaderSize(), blockCount))
@@ -259,7 +248,7 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
 
 
     blockBuffer.resetMerge();
-    uint32_t rbn = blockIndexFile.findRBNForKey(zip);
+    uint32_t rbn = bPlusTree.findLeafRBN(zip);
         
     // Load and inspect the block BEFORE removal
     ActiveBlock blockBefore = blockBuffer.loadActiveBlockAtRBN(rbn, header.getBlockSize(), header.getHeaderSize());
@@ -336,11 +325,6 @@ bool ZipSearchApp::indexHandler(const HeaderRecord& header){
         out.write(reinterpret_cast<char*>(headerData.data()), headerData.size());
         out.close();
 
-
-        if(!blockIndexFile.createIndexFromBlockedFile(fileName, blockSize, headerSize, sequenceSetListRBN)){
-            std::cerr << "Failed to create index file for " << fileName << std::endl;   
-            return false;
-        }
 
         //create B+ tree from index file
 
