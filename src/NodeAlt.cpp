@@ -275,7 +275,7 @@ uint32_t NodeAlt::getKeyAt(size_t index) const
 {
     if(index >= keys.size())
     {
-         return uint32_t(-1);
+         return 0;
     }
        
     return keys[index];
@@ -285,7 +285,7 @@ uint32_t NodeAlt::getValueAt(size_t index) const
 {
     if(index >= values.size())
     {
-         return uint32_t(-1);
+         return 0;
     }
     return values[index];
 }
@@ -304,7 +304,7 @@ uint32_t NodeAlt::getChildRBN(size_t index) const
 {
     if(index >= childRBNs.size())
     {
-         return uint32_t(-1);
+         return 0;
     }
        
     return childRBNs[index];

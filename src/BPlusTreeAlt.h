@@ -59,7 +59,7 @@ private:
 
     NodeAlt* loadNode(uint32_t rbn);
     
-    uint32_t searchRecursive(uint32_t nodeRBN, uint32_t key) const;
+    uint32_t searchRecursive(uint32_t nodeRBN, uint32_t key);
     uint32_t splitNode(uint32_t nodeRBN, uint32_t& promotedKey);
     uint32_t allocateTreeBlock();
 

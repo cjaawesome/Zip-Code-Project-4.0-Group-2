@@ -532,49 +532,9 @@ void BPlusTreeAlt::insertIntoIndex(NodeAlt* node, uint32_t key, uint32_t childRB
     node->insertChildRBN(index + 1, childRBN);
 }
 
-bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, bool& underflow)
-{
-    NodeAlt* node = loadNode(nodeRBN);
-
-    if(node == nullptr)
-    {
-        setError("Failed to load node during removal.");
-        return false;
-    }
-
-    if(node->isLeafNode() == 1)
-    {
-        size_t index = 0;
-        while(index < node->getKeyCount() && node->getKeyAt(index) < key)
-        {
-            ++index;
-        }
-        if(index < node->getKeyCount() && node->getKeyAt(index) == key)
-        {
-            node->removeKeyAt(index);
-            node->removeValueAt(index);
-            writeNode(nodeRBN, *node);
-            underflow = node->isUnderfull();
-            delete node;
-            return true;
-        }
-        else
-        {
-            delete node;
-            setError("Key not found for removal.");
-            return false;
-        }
-    }
-    else
-    {
-        // Index node removal logic to be implemented
-    }
-}
-
 bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent)
 {
     NodeAlt* node = loadNode(nodeRBN);
-
     if(node == nullptr)
     {
         setError("Failed to load node during borrow.");
@@ -590,6 +550,142 @@ bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_
     }
 
     size_t minKeys = (node->getMaxKeys() + 1) / 2;
+    bool success = false;
+
+    // Borrow right sibling
+    if(indexInParent < parent->getChildCount() - 1)
+    {
+        uint32_t rightSiblingRBN = parent->getChildRBN(indexInParent + 1);
+        NodeAlt* rightSibling = loadNode(rightSiblingRBN);
+        
+        if(rightSibling != nullptr && rightSibling->getKeyCount() > minKeys)
+        {
+            if(node->isLeafNode() == 1)
+            {
+                // Borrow smallest key & value from right
+                uint32_t borrowedKey = rightSibling->getKeyAt(0);
+                uint32_t borrowedValue = rightSibling->getValueAt(0);
+
+                // Add to current node
+                node->insertKeyAt(node->getKeyCount(), borrowedKey);
+                node->insertValueAt(node->getKeyCount(), borrowedValue);
+
+                // Remove from right sibling
+                rightSibling->removeKeyAt(0);
+                rightSibling->removeValueAt(0);
+
+                // Update separator key
+                parent->setKeyAt(indexInParent, rightSibling->getKeyAt(0));
+            }
+            else // Index Node
+            {
+                uint32_t parentKey = parent->getKeyAt(indexInParent);
+                uint32_t rightFirstKey = rightSibling->getKeyAt(0);
+                uint32_t rightFirstChild = rightSibling->getChildRBN(0);
+
+                // Add parent key and right first child RBN to current node
+                node->insertKeyAt(node->getKeyCount(), parentKey);
+                node->insertChildRBN(node->getChildCount(), rightFirstChild);
+
+                // Remove key & child from right sibling
+                rightSibling->removeKeyAt(0);
+                rightSibling->removeChildRBN(0);
+
+                // Push right first key up to parent
+                parent->setKeyAt(indexInParent, rightFirstKey);
+            }
+            
+            // Write all nodes
+            writeNode(nodeRBN, *node);
+            writeNode(rightSiblingRBN, *rightSibling);
+            writeNode(parentRBN, *parent);
+            success = true;
+        }
+        delete rightSibling;
+    }
+    
+    // Try borrow left sibling
+    if(!success && indexInParent > 0)
+    {
+        uint32_t leftSiblingRBN = parent->getChildRBN(indexInParent - 1);
+        NodeAlt* leftSibling = loadNode(leftSiblingRBN);
+
+        if(leftSibling != nullptr && leftSibling->getKeyCount() > minKeys)
+        {
+            if(node->isLeafNode() == 1)
+            {
+                // Borrow largest key & value from left
+                uint32_t borrowedKey = leftSibling->getKeyAt(leftSibling->getKeyCount() - 1);
+                uint32_t borrowedValue = leftSibling->getValueAt(leftSibling->getKeyCount() - 1);
+
+                // Remove key & value from left sibling
+                leftSibling->removeKeyAt(leftSibling->getKeyCount() - 1);
+                leftSibling->removeValueAt(leftSibling->getKeyCount() - 1);
+
+                // Add to beginning of current node
+                node->insertKeyAt(0, borrowedKey);
+                node->insertValueAt(0, borrowedValue);
+
+                // Update separator key
+                parent->setKeyAt(indexInParent - 1, node->getKeyAt(0));
+            }
+            else // Index Node
+            {
+                uint32_t parentKey = parent->getKeyAt(indexInParent - 1);
+                uint32_t leftLastKey = leftSibling->getKeyAt(leftSibling->getKeyCount() - 1);
+                uint32_t leftLastChild = leftSibling->getChildRBN(leftSibling->getChildCount() - 1);
+
+                // Add parent key and left last child RBN to current node
+                node->insertKeyAt(0, parentKey);
+                node->insertChildRBN(0, leftLastChild);
+
+                // Remove last key and child from left sibling
+                leftSibling->removeKeyAt(leftSibling->getKeyCount() - 1);
+                leftSibling->removeChildRBN(leftSibling->getChildCount() - 1);
+
+                // Add left last key to parent
+                parent->setKeyAt(indexInParent - 1, leftLastKey);
+            }
+
+            // Write nodes
+            writeNode(nodeRBN, *node);
+            writeNode(leftSiblingRBN, *leftSibling);
+            writeNode(parentRBN, *parent);
+            success = true;
+        }
+        delete leftSibling;
+    }
+    
+    if (success) 
+    {
+        return true;
+    }
+     
+    delete node;
+    delete parent;
+    return false;
+}
+
+/*
+bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent)
+{
+    NodeAlt* node = loadNode(nodeRBN);
+
+    if(node == nullptr)
+    {
+        setError("Failed to load node during borrow.");
+        return false;
+    }
+
+    NodeAlt* parent = loadNode(parentRBN);
+
+    if(parent == nullptr)
+    {
+        delete node;
+        setError("Failed to load parent node during borrow.");
+        return false;
+    }
+    size_t minKeys = (node->getMaxKeys() + 1) / 2;
 
     if(node->isLeafNode() == 1)
     {
@@ -597,7 +693,7 @@ bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_
         {
             uint32_t rightSiblingRBN = parent->getChildRBN(indexInParent + 1);
             NodeAlt* rightSibling = loadNode(rightSiblingRBN);
-            
+        
             if(rightSibling != nullptr && rightSibling->getKeyCount() > minKeys)
             {
                 // Borrow first value from right sibling
@@ -702,7 +798,6 @@ bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_
             delete rightSibling;
         }
     }
-
     if(indexInParent > 0)
     {
         uint32_t leftSiblingRBN = parent->getChildRBN(indexInParent - 1);
@@ -742,6 +837,7 @@ bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_
     delete parent;
     return false;
 }
+*/
 
 bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent)
 {
@@ -796,7 +892,6 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
                 }
             }
 
-            // One divorced already written & right sibling is dead node
             writeNode(nodeRBN, *node);
             writeNode(parentRBN, *parent);
             delete rightSibling;
@@ -839,7 +934,6 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
                     }
                 }
 
-                // One divorced sibling already written & node is dead
                 writeNode(leftSiblingRBN, *leftSibling);
                 writeNode(parentRBN, *parent);
                 delete node;
@@ -992,8 +1086,7 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
                     treeHeader.setHeight(treeHeader.getHeight() - 1);
                 }
             }
-        }
-            
+        }     
         // Clean up
         if (node) 
             delete node;
@@ -1006,4 +1099,165 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
     if (parent) 
         delete parent;
     return false;
+}
+
+uint32_t BPlusTreeAlt::searchRecursive(uint32_t nodeRBN, uint32_t key)
+{
+    NodeAlt* node = loadNode(nodeRBN);
+    if(node == nullptr)
+    {
+        setError("Failed to load root node in searchRecursive.");
+        return 0;
+    }
+
+    size_t i = 0;
+
+    while(i < node->getKeyCount() && key > node->getKeyAt(i))
+    {
+        ++i;
+    }
+
+    if(node->isLeafNode() == 1)
+    {
+        uint32_t resultRBN = 0;
+        if(i < node->getKeyCount() && node->getKeyAt(i) == key)
+        {
+            resultRBN = nodeRBN;
+        }
+       delete node;
+       return resultRBN;
+    }
+    else
+    {
+        uint32_t nextRBN = node->getChildRBN(i);
+
+        delete node;
+
+        if(nextRBN == 0)
+        {
+            setError("Tried to access null RBN pointer in search recursive function.");
+            return 0;
+        }
+        return searchRecursive(nextRBN, key);
+    }
+    return 0;
+}
+
+void BPlusTreeAlt::updateParentKey(uint32_t parentRBN, size_t indexInParent, uint32_t newKey)
+{
+    // Update if not leftmost child
+    if (parentRBN != 0 && indexInParent > 0)
+    {
+        NodeAlt* parent = loadNode(parentRBN);
+        if (parent != nullptr)
+        {
+            // Get separator key
+            size_t parentKeyIndex = indexInParent - 1;
+
+            if (parentKeyIndex < parent->getKeyCount())
+            {
+                parent->setKeyAt(parentKeyIndex, newKey);
+                writeNode(parentRBN, *parent);
+            }
+            delete parent;
+        }
+        else
+        {
+            setError("Failed to load parent node for separator update.");
+        }
+    }
+}
+
+bool BPlusTreeAlt::remove(uint32_t key)
+{
+    uint32_t rootRBN = treeHeader.getRootIndexRBN();
+
+    bool result = removeRecursive(rootRBN, key, 0, 0);
+
+    if(result)
+    {
+        NodeAlt* root = loadNode(rootRBN);
+        if(root != nullptr)
+        {
+            if(root->isLeafNode() == 0 && root->getKeyCount() == 0)
+            {
+                treeHeader.setRootIndexRBN(root->getChildRBN(0));
+                treeHeader.setHeight(treeHeader.getHeight() - 1);
+            }
+            delete root;
+        }
+    }
+    return result;
+}
+
+bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t parentRBN, size_t indexInParent)
+{
+    NodeAlt* node = loadNode(nodeRBN);
+    if(node == nullptr)
+    {
+        setError("Failed to load node in remove recursive.");
+        return false;
+    }
+
+    size_t i = 0;
+    while(i < node->getKeyCount() && key > node->getKeyAt(i))
+    {
+        ++i;
+    }
+
+    bool success = false;
+
+    if(node->isLeafNode() == 1)
+    {
+        if(i < node->getKeyCount() && key == node->getKeyAt(i))
+        {
+            node->removeKeyAt(i);
+            node->removeValueAt(i);
+            writeNode(nodeRBN, *node);
+            success = true;
+
+            if(i == 0 && node->getKeyCount() > 0 && parentRBN != 0)
+            {
+               updateParentKey(parentRBN, indexInParent, node->getKeyAt(0)); 
+            }
+        }
+
+        if(success && node->isUnderfull() && parentRBN != 0)
+        {
+            success = borrowFromSibling(nodeRBN, parentRBN, indexInParent);
+
+            if(!success)
+            {
+                success = mergeWithSibling(nodeRBN, parentRBN, indexInParent);
+            }
+        }      
+    }
+    else
+    {
+        uint32_t childRBN = node->getChildRBN(i);
+
+        if(childRBN == 0)
+        {
+            setError("Failed to load child RBN node in recursive search.");
+        }
+        else
+        {
+            success = removeRecursive(childRBN, key, nodeRBN, i);
+
+            if(success)
+            {
+                if(node->isUnderfull() && parentRBN != 0)
+                {
+                    success = borrowFromSibling(nodeRBN, parentRBN, indexInParent);
+
+                    if(!success)
+                    {
+                        success = mergeWithSibling(nodeRBN, parentRBN, indexInParent);
+                    }
+                }
+            }
+        }
+    }
+    delete node;
+    return success;
 }
