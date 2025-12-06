@@ -3,6 +3,8 @@
 #include "../src/ZipCodeRecord.h"
 #include "../src/HeaderRecord.h"
 #include "../src/HeaderBuffer.h"
+#include "../src/BPlusTreeAlt.h"
+#include "../src/BPlusTreeHeaderAlt.h"
 #include "ZipSearchApp.h"
 #include <iostream>
 #include <sstream>
@@ -36,6 +38,7 @@ ZipSearchApp::ZipSearchApp(const std::string& file){
     fileLoaded = true;
     HeaderRecord header;
     HeaderBuffer headerBuffer;
+
     if (!headerBuffer.readHeader(fileName, header))
     {
         std::cerr << "Failed to read header from " << fileName << std::endl;
@@ -44,6 +47,7 @@ ZipSearchApp::ZipSearchApp(const std::string& file){
     {
         std::cerr << "Failed to handle index for " << fileName << std::endl;
     }
+    
 }
 
 void ZipSearchApp::setDataFile(const std::string& file){
@@ -304,17 +308,61 @@ bool ZipSearchApp::indexHandler(const HeaderRecord& header){
     const std::string indexFileName = header.getIndexFileName();
     const uint32_t sequenceSetListRBN = header.getSequenceSetListRBN();
     const bool staleFlag = header.getStaleFlag();
+
+    BPlusTreeHeaderBufferAlt bPlusTreeHeaderBuffer;
+    
+    
     
     if(staleFlag){
+        
+        //create index file header
+
+        BPlusTreeHeaderAlt treeHeader;
+        treeHeader.setBlockedFileName(fileName);
+        treeHeader.setBlockSize(blockSize);
+        treeHeader.setHeight(0);
+        treeHeader.setRootIndexRBN(0);
+
+        std::ofstream out(indexFileName, std::ios::binary);
+        if (!out.is_open())
+        {
+            std::cerr << "Error: Cannot create index file: " << indexFileName << std::endl;
+            return false;
+        }
+    
+        auto headerData = treeHeader.serialize();
+        treeHeader.setHeaderSize(headerData.size());
+
+        out.write(reinterpret_cast<char*>(headerData.data()), headerData.size());
+        out.close();
+
+
         if(!blockIndexFile.createIndexFromBlockedFile(fileName, blockSize, headerSize, sequenceSetListRBN)){
             std::cerr << "Failed to create index file for " << fileName << std::endl;   
+            return false;
+        }
+
+        //create B+ tree from index file
+
+        
+
+        if(!bPlusTree.open(indexFileName, fileName))
+        {
+            std::cerr << "Failed To Open B+ Tree." << std::endl;
+            return false;
+        }
+
+        if(!bPlusTree.buildFromSequenceSet())
+        {
+            std::cerr << "Failed To Build B+ Tree From Sequence Set." << std::endl;
             return false;
         }
         
     }
     else{
-        if(!blockIndexFile.read(header.getIndexFileName())){
-            std::cerr << "Failed to read index file: " << header.getIndexFileName() << std::endl;
+        if(!bPlusTree.open(indexFileName, fileName))
+        {
+            std::cerr << "Failed To Open B+ Tree." << std::endl;
             return false;
         }
     }
