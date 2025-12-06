@@ -9,7 +9,7 @@ BPlusTreeHeaderBufferAlt::~BPlusTreeHeaderBufferAlt()
 
 bool BPlusTreeHeaderBufferAlt::readHeader(const std::string& filename, BPlusTreeHeaderAlt& bHeader)
 {
-     std::ifstream file(filename, std::ios::binary);
+    std::ifstream file(filename, std::ios::binary);
     if (!file.is_open())
     {
         setError("Cannot open file: " + filename);
@@ -46,8 +46,12 @@ bool BPlusTreeHeaderBufferAlt::readHeader(const std::string& filename, BPlusTree
 
 bool BPlusTreeHeaderBufferAlt::writeHeader(std::fstream& file, BPlusTreeHeaderAlt& bHeader)
 {
-    file.seekp(0, std::ios::beg);
+    // Overwrite header via stream passed from page buffer
+    // Seek to beginning of file
+    file.seekp(0, std::ios::beg); 
+    // Serialize tree header
     auto headerData = bHeader.serialize();
+    // rewrite header
     file.write(reinterpret_cast<char*>(headerData.data()), headerData.size());
     return true;
 }

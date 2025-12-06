@@ -35,7 +35,7 @@ public:
     /**
      * @brief read header
      * @details Opens file, writes the header, and closes file
-     * @param filename name of file being written too
+     * @param file Pointer to the file stream currently opened by the page buffer class.
      * @param bHeader the header being written
      * @returns true or false depending on if the header was write was successfully or not
      */

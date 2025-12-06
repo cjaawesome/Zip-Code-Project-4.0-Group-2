@@ -13,11 +13,16 @@
 
 // Structure representing a b plus tree index entry.
 struct IndexEntry
-    {
-        uint32_t key;
-        uint32_t blockRBN;
-    };
+{
+    uint32_t key;
+     uint32_t blockRBN;
+};
 
+/**
+ * @class BPlusTreeAlt
+ * @brief Class responsible for the building and maintain of a B+ tree living on the disk.
+ * @details Implements standard algorithms for the build of the tree. Has functions for searching, insertion, removal, and range queries.
+ */
 class BPlusTreeAlt
 {
 public:

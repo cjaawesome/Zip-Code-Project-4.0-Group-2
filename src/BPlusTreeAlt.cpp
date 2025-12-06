@@ -172,6 +172,7 @@ uint32_t BPlusTreeAlt::findLeafRBN(uint32_t key)
             return 0;
         }
 
+        // Appropriate leaf node found
         if(node->isLeafNode() == 1)
         {
             uint32_t result = currentRBN;
@@ -198,16 +199,18 @@ bool BPlusTreeAlt::buildFromSequenceSet()
         setError("Buffers not open.");
         return false;
     }
-
+    // Create index entry vector
     std::vector<IndexEntry> entries;
-
+    // Start at root of sequence set
     uint32_t currentRBN = sequenceHeader.getSequenceSetListRBN();
     while(currentRBN != 0)
     {
+        // Start reading the sequence set
         ActiveBlock block = sequenceSetBuffer.loadActiveBlockAtRBN(currentRBN, blockSize, sequenceHeaderSize);
         std::vector<ZipCodeRecord> records;
+        // Unpack records with the exposed record buffer
         sequenceSetBuffer.unpackBlockAPI(block.data, records);
-
+        // Get the highest key in each block
         if(!records.empty())
         {
             uint32_t highestKey = records.back().getZipCode();
@@ -216,14 +219,15 @@ bool BPlusTreeAlt::buildFromSequenceSet()
         }
         currentRBN = block.succeedingRBN;
     }
-
+    // Start building the tree from the index entries
     bool result = buildTreeFromEntries(entries);
-
+    // Return if the build was successful
     return result;
 }
 
 bool BPlusTreeAlt::buildTreeFromEntries(const std::vector<IndexEntry>& entries)
 {
+    // Verify entries has data
     if(entries.empty())
     {
         setError("No entries to build tree from.");
@@ -231,13 +235,15 @@ bool BPlusTreeAlt::buildTreeFromEntries(const std::vector<IndexEntry>& entries)
     }
     std::vector<uint32_t> currentLevel = buildLeafLevel(entries);
     treeHeader.setHeight(1);
-
+    // While current level has more than 1 child RBN build the index
     while(currentLevel.size() > 1)
     {
+        // Build index levels and update current level with parent rbns
         currentLevel = buildIndexLevel(currentLevel);
+        // Update tree height after each level
         treeHeader.setHeight(treeHeader.getHeight() + 1);
     }
-
+    // Set root index to the first node in the current level vector
     treeHeader.setRootIndexRBN(currentLevel[0]);
 
     return true;
@@ -245,28 +251,30 @@ bool BPlusTreeAlt::buildTreeFromEntries(const std::vector<IndexEntry>& entries)
 
 std::vector<uint32_t> BPlusTreeAlt::buildLeafLevel(const std::vector<IndexEntry>& entries)
 {
+    // Create leaf rbn vector
     std::vector<uint32_t> leafRBNs;
     size_t maxKeys = NodeAlt::calculateMaxKeys(blockSize, true);
-
+    // For each entry in entries
     for (size_t i = 0; i < entries.size(); i += maxKeys)
     {
+        // Create empty leaf node
         NodeAlt leaf(true, blockSize);
-
+        // From j to max keys insert key and value to distribute keys properly
         for(size_t j = 0; j < maxKeys && (i + j) < entries.size(); ++j)
         {
             leaf.insertKeyAt(j, entries[i + j].key);
             leaf.insertValueAt(j, entries[i + j].blockRBN);
         }
-
+        // Update prev rbn
         if(!leafRBNs.empty())
             leaf.setPrevLeafRBN(leafRBNs.back());
-        
+        // allocate new node
         uint32_t leafRBN =  allocateTreeBlock();
         if (!writeNode(leafRBN, leaf))
         {
             return {}; 
         };
-
+        // Update next rbn
         if(!leafRBNs.empty())
         {
             NodeAlt* prevLeaf = loadNode(leafRBNs.back());
@@ -278,6 +286,7 @@ std::vector<uint32_t> BPlusTreeAlt::buildLeafLevel(const std::vector<IndexEntry>
             writeNode(leafRBNs.back(), *prevLeaf);
             delete prevLeaf;
         }
+        // Add leaf rbn to leaf vector
         leafRBNs.push_back(leafRBN);
     }
     return leafRBNs;
@@ -285,26 +294,34 @@ std::vector<uint32_t> BPlusTreeAlt::buildLeafLevel(const std::vector<IndexEntry>
 
 std::vector<uint32_t> BPlusTreeAlt::buildIndexLevel(const std::vector<uint32_t>& childRBNs)
 {
+    // Create parent rbn vector
     std::vector<uint32_t> parentRBNs;
+    // Calculate max keys per node
     size_t maxKeys = NodeAlt::calculateMaxKeys(blockSize, false);
-
+    // For i in childRBN size increment by max keys + 1
     for(size_t i = 0; i < childRBNs.size(); i += (maxKeys + 1))
     {
+        // Create empty index node
         NodeAlt indexNode(false, blockSize);
-
+        // Insert child rbn to first index at i
         indexNode.insertChildRBN(0, childRBNs[i]);
-
+        // Start at second index
         for(size_t j = 1; j <= maxKeys && (i + j) < childRBNs.size(); ++j)
         {
+            // Load child node from file
             NodeAlt* childNode = loadNode(childRBNs[i + j - 1]);
+            // Get promote key from child node
             uint32_t childPromoteKey = childNode->getKeyAt(childNode->getKeyCount() - 1);
             delete childNode;
-
+            // Insert seperator key into it's correct up and adjacent position
             indexNode.insertKeyAt(j - 1, childPromoteKey);
             indexNode.insertChildRBN(j, childRBNs[i + j]);
         }
+        // Allocate new parent block
         uint32_t parentRBN = allocateTreeBlock();
+        // Write the newly created block
         writeNode(parentRBN, indexNode);
+        // Add parent rbn to the list
         parentRBNs.push_back(parentRBN);
     }
     return parentRBNs;
@@ -348,36 +365,118 @@ void BPlusTreeAlt::printTree()
 
 bool BPlusTreeAlt::insert(uint32_t key, uint32_t blockRBN)
 {
-    return false;
+    // Hold results if node splits
+    uint32_t newSplitKey = 0;
+    uint32_t newRightChildRBN = 0;
+
+    // Prepare to rewrite header
+    BPlusTreeHeaderBufferAlt headerBuffer;
+
+    // Handle emptry tree
+    if (treeHeader.getRootIndexRBN() == 0)
+    {
+        // Allocate new block
+        uint32_t newRBN = allocateTreeBlock(); 
+        // Create leaf node
+        NodeAlt* newRoot = new NodeAlt(true, treeHeader.getBlockSize());
+        
+        if (newRoot == nullptr)
+        {
+            setError("Failed to create initial root node.");
+            return false;
+        }
+        // Insert data
+        newRoot->insertKeyAt(0, key);
+        newRoot->insertValueAt(0, blockRBN);
+        // Write node
+        writeNode(newRBN, *newRoot);
+
+        // Update Tree Header
+        treeHeader.setRootIndexRBN(newRBN);
+        treeHeader.setHeight(1);
+        // Clean
+        delete newRoot;
+    }
+    else 
+    {
+        // Recursive insert
+        uint32_t oldRootRBN = treeHeader.getRootIndexRBN();
+
+        // The recursive function returns true if a split occurred
+        // newChildRBN is the right of the split
+        // newPromotedKey is the key to insert into the new root/parent
+        bool splitOccurred = insertRecursive(oldRootRBN, key, blockRBN, newRightChildRBN,newSplitKey);
+
+        // Insert worked update header
+        if (!splitOccurred)
+        {
+            return headerBuffer.writeHeader(indexPageBuffer.getFileStream(), treeHeader);
+        }
+        
+        // Split occurred
+        // Allocate new node
+        uint32_t newRootRBN = allocateTreeBlock();
+        // Create new index node
+        NodeAlt* newRoot = new NodeAlt(false, treeHeader.getBlockSize());
+
+        if (newRoot == nullptr)
+        {
+            setError("Failed to create new index root node after split.");
+            return false;
+        }
+
+        // Old root
+        newRoot->insertChildRBN(0, oldRootRBN); 
+        
+        // Separator key
+        newRoot->insertKeyAt(0, newSplitKey);
+        
+        // New node from split
+        newRoot->insertChildRBN(1, newRightChildRBN);
+
+        // Write split node
+        writeNode(newRootRBN, *newRoot);
+
+        // Update Tree Header
+        treeHeader.setRootIndexRBN(newRootRBN);
+        treeHeader.setHeight(treeHeader.getHeight() + 1);
+        delete newRoot;
+    }
+
+    // Rewrite header
+    return headerBuffer.writeHeader(indexPageBuffer.getFileStream(), treeHeader);
 }
 
 uint32_t BPlusTreeAlt::splitNode(uint32_t nodeRBN, uint32_t& promotedKey)
 {
+    // Load node to split
     NodeAlt* node = loadNode(nodeRBN);
     if(node == nullptr)
     {
         setError("Failed to load node during split.");
         return 0;
     }
-
+    // Allocate new node for split
     uint32_t newRBN = allocateTreeBlock();
+    // Create new node for split
     NodeAlt* newNode = new NodeAlt(node->isLeafNode() == 1, blockSize);
-
+    // Get the split index 
     size_t splitIndex = (node->getKeyCount() + 1) / 2;
-
+    // If leaf node
     if(node->isLeafNode() == 1)
     {
+        // Move values from split index into new right sibling split noede
         for(size_t i = splitIndex; i < node->getKeyCount(); ++i)
         {
             size_t newIndex = i - splitIndex;
             newNode->insertKeyAt(newIndex, node->getKeyAt(i));
             newNode->insertValueAt(newIndex, node->getValueAt(i));
         }
-
+        // Update RBN pointers
         newNode->setNextLeafRBN(node->getNextLeafRBN());
         newNode->setPrevLeafRBN(nodeRBN);
         node->setNextLeafRBN(newRBN);
-
+        // If next node is not the last node
         if(newNode->getNextLeafRBN() != 0)
         {
             NodeAlt* nextLeaf = loadNode(newNode->getNextLeafRBN());
@@ -385,9 +484,9 @@ uint32_t BPlusTreeAlt::splitNode(uint32_t nodeRBN, uint32_t& promotedKey)
             writeNode(newNode->getNextLeafRBN(), *nextLeaf);
             delete nextLeaf;
         }
-
+        // Get promoted key from the new node
         promotedKey = newNode->getKeyAt(0);
-
+        // Remove the split keys and values from the old node
         while (node->getKeyCount() > splitIndex)
         {
             node->removeKeyAt(node->getKeyCount() - 1);
@@ -396,44 +495,58 @@ uint32_t BPlusTreeAlt::splitNode(uint32_t nodeRBN, uint32_t& promotedKey)
     }
     else
     {
-        for(size_t i = splitIndex; i < node->getKeyCount(); ++i)
+        // Index node
+        // Get promoted key
+        promotedKey = node->getKeyAt(splitIndex);
+        // Move children from split point into new index node
+        for(size_t i = splitIndex; i < node->getChildCount(); ++i)
         {
-            size_t newIndex = i - splitIndex - 1;
-            newNode->insertKeyAt(newIndex, node->getKeyAt(i));
+            size_t newIndex = i - splitIndex;
             newNode->insertChildRBN(newIndex, node->getChildRBN(i));
         }
-
-        newNode->insertChildRBN(newNode->getKeyCount(), node->getChildRBN(node->getKeyCount()));
-
-        promotedKey = node->getKeyAt(splitIndex);
-
+        // Move keys from split point into new index node
+        for(size_t i = splitIndex + 1; i < node->getKeyCount(); ++i)
+        {
+            size_t newIndex = i - (splitIndex + 1);
+            newNode->insertKeyAt(newIndex, node->getKeyAt(i));
+        }
+        // Remove keys from old node
         while (node->getKeyCount() > splitIndex)
         {
             node->removeKeyAt(node->getKeyCount() - 1);
+        }
+        // Remove split index key
+        node->removeKeyAt(splitIndex);
+        // Remove children from old node
+        while(node->getChildCount() > splitIndex)
+        {
             node->removeChildRBN(node->getChildCount() - 1);
         }
     }
-
+    // Rewrite nodes
     writeNode(nodeRBN, *node);
     writeNode(newRBN, *newNode);
-
+    // Clean
     delete node;
     delete newNode;
-
+    // Return split node rbn
     return newRBN;
 }
 
 bool BPlusTreeAlt::insertRecursive(uint32_t nodeRBN, uint32_t key, uint32_t value, 
                                     uint32_t& newChildRBN, uint32_t& newPromotedKey)
 {
+    // Load node to insert data into
     NodeAlt* node = loadNode(nodeRBN);
     if(node == nullptr)
     {
         setError("Failed to load node during insertion.");
         return false;
     }
+    // If leaf node
     if(node->isLeafNode() == 1)
     {
+        // Room to insert
         if(!node->isFull())
         {
             insertIntoLeaf(node, key, value);
@@ -441,20 +554,20 @@ bool BPlusTreeAlt::insertRecursive(uint32_t nodeRBN, uint32_t key, uint32_t valu
             delete node;
             return false; // No split
         }
-        else
+        else // Need to split
         {
             delete node;
             newChildRBN = splitNode(nodeRBN, newPromotedKey);
 
             if(key < newPromotedKey)
-            {
+            {   // Insert key into original node
                 node = loadNode(nodeRBN);
                 insertIntoLeaf(node, key, value);
                 writeNode(nodeRBN, *node);
                 delete node;
             }
             else
-            {
+            {   // Insert key into new split node
                 node = loadNode(newChildRBN);
                 insertIntoLeaf(node, key, value);
                 writeNode(newChildRBN, *node);
@@ -465,20 +578,22 @@ bool BPlusTreeAlt::insertRecursive(uint32_t nodeRBN, uint32_t key, uint32_t valu
     }
     else
     {
+        // Index node
         size_t childIndex = node->findChildIndex(key);
         uint32_t childRBN = node->getChildRBN(childIndex);
         delete node;
-
+        // Store promoted key and rbn of node to move up and adjacent
         uint32_t childPromotedKey, newGrandChildRBN;
+        // Recursive call to find appropriate index nodes
         bool childSplit = insertRecursive(childRBN, key, value, newGrandChildRBN, childPromotedKey);
-
+        // If no split occurred exit
         if(!childSplit)
         {
             return false;
         }
-
+        // Load original node
         node = loadNode(nodeRBN);
-
+        // If not full after split instert
         if(!node->isFull())
         {
             insertIntoIndex(node, childPromotedKey, newGrandChildRBN);
@@ -487,10 +602,10 @@ bool BPlusTreeAlt::insertRecursive(uint32_t nodeRBN, uint32_t key, uint32_t valu
             return false; // No split
         }
         else
-        {
+        {   // Split node
             delete node;
             newChildRBN = splitNode(nodeRBN, newPromotedKey);
-
+            // Insert into old node
             if(childPromotedKey < newPromotedKey)
             {
                 node = loadNode(nodeRBN);
@@ -499,7 +614,7 @@ bool BPlusTreeAlt::insertRecursive(uint32_t nodeRBN, uint32_t key, uint32_t valu
                 delete node;
             }
             else
-            {
+            {   // Insert into newly split node
                 node = loadNode(newChildRBN);
                 insertIntoIndex(node, childPromotedKey, newGrandChildRBN);
                 writeNode(newChildRBN, *node);
@@ -512,6 +627,7 @@ bool BPlusTreeAlt::insertRecursive(uint32_t nodeRBN, uint32_t key, uint32_t valu
 
 void BPlusTreeAlt::insertIntoLeaf(NodeAlt* node, uint32_t key, uint32_t value)
 {
+    // Find leaf to insert key and value into
     size_t index = 0;
     while(index < node->getKeyCount() && node->getKeyAt(index) < key)
     {
@@ -523,6 +639,7 @@ void BPlusTreeAlt::insertIntoLeaf(NodeAlt* node, uint32_t key, uint32_t value)
 
 void BPlusTreeAlt::insertIntoIndex(NodeAlt* node, uint32_t key, uint32_t childRBN)
 {
+    // Find index to insert key and child into
     size_t index = 0;
     while(index < node->getKeyCount() && node->getKeyAt(index) < key)
     {
@@ -534,13 +651,14 @@ void BPlusTreeAlt::insertIntoIndex(NodeAlt* node, uint32_t key, uint32_t childRB
 
 bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent)
 {
+    // Load node
     NodeAlt* node = loadNode(nodeRBN);
     if(node == nullptr)
     {
         setError("Failed to load node during borrow.");
         return false;
     }
-
+    // Load node parent
     NodeAlt* parent = loadNode(parentRBN);
     if(parent == nullptr)
     {
@@ -548,7 +666,7 @@ bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_
         setError("Failed to load parent node during borrow.");
         return false;
     }
-
+    // Calc min keys
     size_t minKeys = (node->getMaxKeys() + 1) / 2;
     bool success = false;
 
@@ -841,6 +959,7 @@ bool BPlusTreeAlt::borrowFromSibling(uint32_t nodeRBN, uint32_t parentRBN, size_
 
 bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t indexInParent)
 {
+    // Load node
     NodeAlt* node = loadNode(nodeRBN);
 
     if(node == nullptr)
@@ -848,7 +967,7 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
         setError("Failed to load node in merge with sibling.");
         return false;
     }
-
+    // Load parent
     NodeAlt* parent = loadNode(parentRBN);
 
     if(parent == nullptr)
@@ -857,41 +976,43 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
         delete node;
         return false;
     }
-
+    // Store rbn to set new tree head to
     bool success = false;
     uint32_t rbnToReturn = 0;
-
+    // If leaf node
     if(node->isLeafNode() == 1)
     {
+        // Try merge with right sibling
         uint32_t rightSiblingRBN = node->getNextLeafRBN();
         NodeAlt* rightSibling = loadNode(rightSiblingRBN);
-
+        // Get start index of values
         size_t startIndex = node->getKeyCount();
-
+        // Chceck right sibling loaded and there is room in the node
         if(rightSibling != nullptr && (node->getKeyCount() + rightSibling->getKeyCount()) <= node->getMaxKeys())
-        {
+        {   // Merge keys and values
             for(size_t i = 0; i < rightSibling->getKeyCount(); ++i)
             {
                 node->insertKeyAt(startIndex + i, rightSibling->getKeyAt(i));
                 node->insertValueAt(startIndex + i, rightSibling->getValueAt(i));
             }
-
+            // Update node pointers
             node->setNextLeafRBN(rightSibling->getNextLeafRBN());
             parent->removeKeyAt(indexInParent);
             parent->removeChildRBN(indexInParent + 1);
-
+            // Update right sibling node pointers
             if(rightSibling->getNextLeafRBN() != 0)
             {
                 uint32_t oneDivorcedSiblingRBN = rightSibling->getNextLeafRBN();
                 NodeAlt* oneDivorcedSibling = loadNode(oneDivorcedSiblingRBN);
                 if(oneDivorcedSibling != nullptr)
                 {
+                    // Write updated node
                     oneDivorcedSibling->setPrevLeafRBN(nodeRBN);
                     writeNode(oneDivorcedSiblingRBN, *oneDivorcedSibling);
                     delete oneDivorcedSibling;
                 }
             }
-
+            // Write surviving nodes and clean
             writeNode(nodeRBN, *node);
             writeNode(parentRBN, *parent);
             delete rightSibling;
@@ -904,23 +1025,25 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
 
         if(!success)
         {
+            // Try left sibling
             uint32_t leftSiblingRBN = node->getPrevLeafRBN();
             NodeAlt* leftSibling = loadNode(leftSiblingRBN);
-
+            // Get start index
             size_t leftStartIndex = leftSibling->getKeyCount();
-
+            // If left sibling not null and has room to merge
             if(leftSibling != nullptr && (node->getKeyCount() + leftSibling->getKeyCount()) <= node->getMaxKeys())
-            {
+            {   // Move data from node to left sibling
                 for(size_t i = 0; i < node->getKeyCount(); ++i)
                 {
                     leftSibling->insertKeyAt(leftStartIndex + i, node->getKeyAt(i));
                     leftSibling->insertValueAt(leftStartIndex + i, node->getValueAt(i));
                 }
+                    // Update left sibling pointers
                     leftSibling->setNextLeafRBN(node->getNextLeafRBN());
                     parent->removeKeyAt(indexInParent - 1);
                     parent->removeChildRBN(indexInParent);
 
-
+                // If original node next node is not last node update it's pointers
                 if(node->getNextLeafRBN() != 0)
                 {
                     uint32_t oneDivorcedSiblingRBN = node->getNextLeafRBN();
@@ -928,18 +1051,19 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
 
                     if(oneDivorcedSibling != nullptr)
                     {
+                        // Write updated node
                         oneDivorcedSibling->setPrevLeafRBN(node->getPrevLeafRBN());
                         writeNode(oneDivorcedSiblingRBN, *oneDivorcedSibling);
                         delete oneDivorcedSibling;        
                     }
                 }
-
+                // Write surviving nodes and clean
                 writeNode(leftSiblingRBN, *leftSibling);
                 writeNode(parentRBN, *parent);
                 delete node;
                 delete leftSibling;
                 node = nullptr;
-
+                // Store rbn for tree update
                 success = true;
                 rbnToReturn = leftSiblingRBN;
             }
@@ -950,12 +1074,15 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
         }      
     }
     else
-    {
+    {   // Index nodes
+        // Check there is a right sibling
         if(indexInParent + 1 < parent->getChildCount())
-        {
+        {   // Get right sibling rbn
             uint32_t rightSiblingRBN = parent->getChildRBN(indexInParent + 1);
+            // Confirm right sibling is a valid rbn
             if(rightSiblingRBN != 0)
             {
+                // load right sibling
                 NodeAlt* rightSibling = loadNode(rightSiblingRBN);
 
                 // Get separator key from the parent node
@@ -998,37 +1125,40 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
         
         if(!success && indexInParent > 0)
         {
+            // Try left sibling index
             uint32_t leftSiblingRBN = parent->getChildRBN(indexInParent - 1);
             if(leftSiblingRBN != 0)
             {
+                // Load left sibling
                 NodeAlt* leftSibling = loadNode(leftSiblingRBN);
-
+                // Get separator key
                 uint32_t separatorKey = parent->getKeyAt(indexInParent - 1);
-
+                // If left sibling is valid and there is room to merge
                 if(leftSibling != nullptr && node->getKeyCount() + leftSibling->getKeyCount() + 1 <= node->getMaxKeys())
                 {
+                    // Insert separator key
                     leftSibling->insertKeyAt(leftSibling->getKeyCount(), separatorKey);
-
+                    // Move keys from node to left sibling
                     for(size_t i = 0; i < node->getKeyCount(); ++i)
                     {
                         leftSibling->insertKeyAt(leftSibling->getKeyCount(), node->getKeyAt(i));
                     }
-
+                    // Move children from node to left sibling
                     for(size_t i = 0; i < node->getChildCount(); ++i)
                     {
                         leftSibling->insertChildRBN(leftSibling->getChildCount(), node->getChildRBN(i));
                     }
-
+                    // Remove left key (separator) and original child node from parent
                     parent->removeKeyAt(indexInParent - 1);
                     parent->removeChildRBN(indexInParent);
-
+                    // Rewrite surviving nodes
                     writeNode(leftSiblingRBN, *leftSibling);
                     writeNode(parentRBN, *parent);
-
+                    // Clean
                     delete node;
                     delete leftSibling;
                     node = nullptr;
-
+                    // Store node rbn for return and tree update
                     success = true;
                     rbnToReturn = leftSiblingRBN;
                 }
@@ -1102,6 +1232,7 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
 
 uint32_t BPlusTreeAlt::searchRecursive(uint32_t nodeRBN, uint32_t key)
 {
+    // Load node
     NodeAlt* node = loadNode(nodeRBN);
     if(node == nullptr)
     {
@@ -1110,12 +1241,12 @@ uint32_t BPlusTreeAlt::searchRecursive(uint32_t nodeRBN, uint32_t key)
     }
 
     size_t i = 0;
-
+    // Find starting index for key
     while(i < node->getKeyCount() && key > node->getKeyAt(i))
     {
         ++i;
     }
-
+    // If leaf node return the RBN the key resides in
     if(node->isLeafNode() == 1)
     {
         uint32_t resultRBN = 0;
@@ -1127,16 +1258,17 @@ uint32_t BPlusTreeAlt::searchRecursive(uint32_t nodeRBN, uint32_t key)
        return resultRBN;
     }
     else
-    {
+    {   // If index node is found get the next RBN
         uint32_t nextRBN = node->getChildRBN(i);
-
+        // Clean
         delete node;
-
+        // Verify it is a valid next RBN
         if(nextRBN == 0)
         {
             setError("Tried to access null RBN pointer in search recursive function.");
             return 0;
         }
+        // Recursive call with nextRBN and same key to traverse the tree
         return searchRecursive(nextRBN, key);
     }
     return 0;
@@ -1169,15 +1301,18 @@ void BPlusTreeAlt::updateParentKey(uint32_t parentRBN, size_t indexInParent, uin
 
 bool BPlusTreeAlt::remove(uint32_t key)
 {
+    // Start from tree root
     uint32_t rootRBN = treeHeader.getRootIndexRBN();
-
+    // Get the result of recursive move
     bool result = removeRecursive(rootRBN, key, 0, 0);
-
+    // If succesful
     if(result)
     {
+        // Load root node
         NodeAlt* root = loadNode(rootRBN);
         if(root != nullptr)
         {
+            // If root node is not null, root is not a leaf node, and root key count is zero tree has lost a level, update
             if(root->isLeafNode() == 0 && root->getKeyCount() == 0)
             {
                 treeHeader.setRootIndexRBN(root->getChildRBN(0));
@@ -1215,13 +1350,13 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t pare
             node->removeValueAt(i);
             writeNode(nodeRBN, *node);
             success = true;
-
+            // Parent key needs to be updated
             if(i == 0 && node->getKeyCount() > 0 && parentRBN != 0)
             {
                updateParentKey(parentRBN, indexInParent, node->getKeyAt(0)); 
             }
         }
-
+        // Node is now underfull try to borrow. If borrowing fails try to merge recursively.
         if(success && node->isUnderfull() && parentRBN != 0)
         {
             success = borrowFromSibling(nodeRBN, parentRBN, indexInParent);
@@ -1266,60 +1401,64 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t pare
 
 std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const uint32_t keyEnd)
 {
+    // Create vector to store keys in range
     std::vector<uint32_t> keysFound;
-
+    // Start at tree root
     uint32_t rootRBN = treeHeader.getRootIndexRBN();
+    // Find the starting rbn for the search
     uint32_t currentRBN = rangeSearch(rootRBN, keyStart);
 
-
+    // Ensure valid RBN
     if(currentRBN == 0)
     {
         setError("Current rbn is 0 after range search in search range.");
         return keysFound;
     }
-
+    // Load starting node
     NodeAlt* node = loadNode(currentRBN);
     if(node == nullptr)
     {
         setError("Failed to load current node in search range.");
         return keysFound;
     }
-
+    // While node is not null
     while(node != nullptr)
-    {
+    {   // If in range get all keys in the current rbn
         bool rangeExceeded = false;
         for(size_t i = 0; i < node->getKeyCount(); ++i)
         {
+            // Get current key in the current rbn
             uint32_t currentKey = node->getKeyAt(i);
-
+            // If less than key start skip ahead to next loop
             if(currentKey < keyStart)
             {
                  continue;
             }
-
+            // If greater than keyEnd exit the loop
             if(currentKey > keyEnd)
             {
                 rangeExceeded = true;
                 break;
             }
+            // Key is in range add to vector
             keysFound.push_back(currentKey);
         }
-
+        // Exit while loop if out of range
         if(rangeExceeded)
         {
             break;
         }
-
+        // Move onto the next leaf node in the chain
         uint32_t nextRBN = node->getNextLeafRBN();
-
+        // Clean
         delete node;
         node = nullptr;
-
+        // Reached end of index
         if(nextRBN == 0)
         {
             break;
         }
-
+        // Try to load next node
         node = loadNode(nextRBN);
         if(node == nullptr)
         {
@@ -1327,16 +1466,18 @@ std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const u
             break;
         }
     }
-    
+    // Clean
     if(node != nullptr)
     {
          delete node;
     }
+    // Return range
     return keysFound;
 }
 
 uint32_t BPlusTreeAlt::rangeSearch(uint32_t nodeRBN, uint32_t key)
 {
+    // Load initial node
     NodeAlt* node = loadNode(nodeRBN);
     if(node == nullptr)
     {
@@ -1345,12 +1486,12 @@ uint32_t BPlusTreeAlt::rangeSearch(uint32_t nodeRBN, uint32_t key)
     }
 
     size_t i = 0;
-
+    // Find start index
     while(i < node->getKeyCount() && key > node->getKeyAt(i))
     {
         ++i;
     }
-
+    // If leaf node starting point found
     if(node->isLeafNode() == 1)
     {
         uint32_t resultRBN = nodeRBN;
@@ -1358,16 +1499,17 @@ uint32_t BPlusTreeAlt::rangeSearch(uint32_t nodeRBN, uint32_t key)
         return resultRBN;
     }
     else
-    {
+    {   // Move onto next child rbn
         uint32_t nextRBN = node->getChildRBN(i);
-
+        // Clean
         delete node;
-
+        // If end is reached exit
         if(nextRBN == 0)
         {
             setError("Tried to access null RBN pointer in search recursive function.");
             return 0;
         }
+        // Recursive call to next RBN to find the leaf node
         return rangeSearch(nextRBN, key);
     }
 }
