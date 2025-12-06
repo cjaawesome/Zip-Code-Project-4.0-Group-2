@@ -1192,13 +1192,14 @@ bool BPlusTreeAlt::remove(uint32_t key)
 
 bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t parentRBN, size_t indexInParent)
 {
+    // Load Node
     NodeAlt* node = loadNode(nodeRBN);
     if(node == nullptr)
     {
         setError("Failed to load node in remove recursive.");
         return false;
     }
-
+    // Find Key
     size_t i = 0;
     while(i < node->getKeyCount() && key > node->getKeyAt(i))
     {
@@ -1206,7 +1207,7 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t pare
     }
 
     bool success = false;
-
+    // If leaf node remove key & values and check edge cases
     if(node->isLeafNode() == 1)
     {
         if(i < node->getKeyCount() && key == node->getKeyAt(i))
@@ -1234,6 +1235,7 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t pare
     }
     else
     {
+        // Index node
         uint32_t childRBN = node->getChildRBN(i);
 
         if(childRBN == 0)
@@ -1242,8 +1244,9 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t pare
         }
         else
         {
+            // Recursive call until key removed from leaf node
             success = removeRecursive(childRBN, key, nodeRBN, i);
-
+            // Check if underfull
             if(success)
             {
                 if(node->isUnderfull() && parentRBN != 0)
@@ -1260,4 +1263,112 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t pare
     }
     delete node;
     return success;
+}
+
+std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const uint32_t keyEnd)
+{
+    std::vector<uint32_t> keysFound;
+
+    uint32_t rootRBN = treeHeader.getRootIndexRBN();
+    uint32_t currentRBN = rangeSearch(rootRBN, keyStart);
+
+
+    if(currentRBN == 0)
+    {
+        setError("Current rbn is 0 after range search in search range.");
+        return keysFound;
+    }
+
+    NodeAlt* node = loadNode(currentRBN);
+    if(node == nullptr)
+    {
+        setError("Failed to load current node in search range.");
+        return keysFound;
+    }
+
+    while(node != nullptr)
+    {
+        bool rangeExceeded = false;
+        for(size_t i = 0; i < node->getKeyCount(); ++i)
+        {
+            uint32_t currentKey = node->getKeyAt(i);
+
+            if(currentKey < keyStart)
+            {
+                 continue;
+            }
+
+            if(currentKey > keyEnd)
+            {
+                rangeExceeded = true;
+                break;
+            }
+            keysFound.push_back(currentKey);
+        }
+
+        if(rangeExceeded)
+        {
+            break;
+        }
+
+        uint32_t nextRBN = node->getNextLeafRBN();
+
+        delete node;
+        node = nullptr;
+
+        if(nextRBN == 0)
+        {
+            break;
+        }
+
+        node = loadNode(nextRBN);
+        if(node == nullptr)
+        {
+            setError("Failed to load next node in search range.");
+            break;
+        }
+    }
+    
+    if(node != nullptr)
+    {
+         delete node;
+    }
+    return keysFound;
+}
+
+uint32_t BPlusTreeAlt::rangeSearch(uint32_t nodeRBN, uint32_t key)
+{
+    NodeAlt* node = loadNode(nodeRBN);
+    if(node == nullptr)
+    {
+        setError("Failed to load root node in searchRecursive.");
+        return 0;
+    }
+
+    size_t i = 0;
+
+    while(i < node->getKeyCount() && key > node->getKeyAt(i))
+    {
+        ++i;
+    }
+
+    if(node->isLeafNode() == 1)
+    {
+        uint32_t resultRBN = nodeRBN;
+        delete node;
+        return resultRBN;
+    }
+    else
+    {
+        uint32_t nextRBN = node->getChildRBN(i);
+
+        delete node;
+
+        if(nextRBN == 0)
+        {
+            setError("Tried to access null RBN pointer in search recursive function.");
+            return 0;
+        }
+        return rangeSearch(nextRBN, key);
+    }
 }
