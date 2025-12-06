@@ -1061,9 +1061,8 @@ bool BPlusTreeAlt::mergeWithSibling(uint32_t nodeRBN, uint32_t parentRBN, size_t
                             parentIndexInGrandparent = i;
                             break;
                         }
-                    }
-                        
-                    // Clean up before recursive call
+                    }    
+                    // Clean up 
                     if (node)
                         delete node;
                     delete parent;
