@@ -1,4 +1,3 @@
-#include "../src/PrimaryKeyIndex.h"
 #include "../src/CSVBuffer.h"
 #include "../src/ZipCodeRecord.h"
 #include "../src/HeaderRecord.h"
@@ -18,8 +17,11 @@ const std::string ADD_ARG = "-A";
 const std::string REMOVE_ARG = "-R";
 const std::string SEARCH_ARG = "-S";
 const std::string FILE_ARG = "-F";
+const std::string CREATE_INDEX_ARG = "-CI";
 const std::string PHYSICAL_DUMP_ARG = "-PD";
 const std::string LOGICAL_DUMP_ARG = "-LD";
+const std::string PRINT_ARG = "-PR";
+const std::string RANGE_QUERY_ARG = "-RQ";
 
 
 // uint32_t zipCode; // 5-digit zip code
@@ -76,6 +78,8 @@ bool ZipSearchApp::process(int argc, char* argv[]){
     // Add: -A 12345 LocationName ST CountyName 40.7128 -74.0060
     // Logical Dump: -LD
     // Physical Dump: -PD
+    // Print B+ Tree: -PR
+    // Range Query: -RQ 12345 12350
     HeaderRecord header;
     HeaderBuffer headerBuffer;
     uint32_t headerSize;
@@ -99,7 +103,7 @@ bool ZipSearchApp::process(int argc, char* argv[]){
             availListHead = header.getAvailableListRBN();
             blockCount = header.getBlockCount();
     }
-
+    BlockBuffer blockBuffer;
     for (int i = 1; i < argc; ++i) {
         try {
             if(argv[i] == FILE_ARG){
@@ -138,6 +142,33 @@ bool ZipSearchApp::process(int argc, char* argv[]){
                 }
                 std::cout << "Found: " << outRecord << std::endl;
             }
+            else if(argv[i] == CREATE_INDEX_ARG){
+                //rebuild B+ tree index
+                BPlusTreeHeaderAlt treeHeader;
+                treeHeader.setBlockedFileName(fileName);
+                treeHeader.setBlockSize(blockSize);
+                treeHeader.setHeight(0);
+                treeHeader.setRootIndexRBN(0);
+                
+
+                std::ofstream out("PT2_Randomized.idx", std::ios::binary);
+                if (!out.is_open())
+                {
+                    std::cerr << "Error: Cannot create index file: " << "PT2_Randomized.idx" << std::endl;
+                    return false;
+                }
+
+                auto headerData = treeHeader.serialize();
+                treeHeader.setHeaderSize(headerData.size());
+
+                out.write(reinterpret_cast<char *>(headerData.data()), headerData.size());
+                out.close();
+                if(!bPlusTree.buildFromSequenceSet()){
+                    std::cerr << "Failed to build B+ tree index." << std::endl;
+                    return false;
+                }
+                std::cout << "B+ tree index successfully built." << std::endl;
+            }
             else if(argv[i] == REMOVE_ARG){
                 uint32_t zip = std::stoul(argv[++i]);
 
@@ -151,7 +182,7 @@ bool ZipSearchApp::process(int argc, char* argv[]){
             else if(argv[i] == LOGICAL_DUMP_ARG){
                 std::string outFile = argv[++i]; //get out file name
                 std::ofstream out(outFile, std::ios::out);    
-                BlockBuffer blockBuffer;
+                
                 if(!blockBuffer.openFile(fileName, headerSize)){
                     std::cerr << "Failed to open block buffer\n";
                     return false;
@@ -162,13 +193,29 @@ bool ZipSearchApp::process(int argc, char* argv[]){
             else if(argv[i] == PHYSICAL_DUMP_ARG){
                 std::string outFile = argv[++i]; //get out file name
                 std::ofstream out(outFile, std::ios::out);    
-                BlockBuffer blockBuffer;
+                
                 if(!blockBuffer.openFile(fileName, headerSize)){
                     std::cerr << "Failed to open block buffer\n";
                     return false;
                 }
                 blockBuffer.dumpPhysicalOrder(out, sequenceSetHead, availListHead, blockCount, blockSize, headerSize);
                 std::cout << "Physical dump written to: " << outFile << std::endl;
+            }
+            else if(argv[i] == PRINT_ARG){
+                bPlusTree.printTree();
+            }
+            else if(argv[i] == RANGE_QUERY_ARG){
+                uint32_t zipStart = std::stoul(argv[++i]);
+                uint32_t zipEnd = std::stoul(argv[++i]);
+                
+                std::cout << "Range Query Results for ZIPs " << zipStart << " to " << zipEnd << ":\n";
+                for(uint32_t zip = zipStart; zip <= zipEnd; ++zip){
+                    ZipCodeRecord outRecord;
+                    if(search(zip, blockSize, headerSize, outRecord)){
+                        std::cout << outRecord << std::endl;
+                    }
+                }
+
             }
             else {
                 std::cerr << "Unknown argument: " << argv[i] << std::endl;
@@ -179,9 +226,22 @@ bool ZipSearchApp::process(int argc, char* argv[]){
             std::cerr << "Error parsing arguments: " << e.what() << std::endl;
             return false;
         }
+
+        //update index if needed
+
+        if(blockBuffer.getSplitOccurred() || blockBuffer.getMergeOccurred()){
+        //rebuild index
+            if(!bPlusTree.buildFromSequenceSet()){
+                std::cerr << "Failed to rebuild B+ tree index." << std::endl;
+                return false;
+            }
+        }
+        
     }
 
-
+    
+    
+    
     return true;
 
 }
