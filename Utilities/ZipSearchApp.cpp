@@ -162,10 +162,10 @@ bool ZipSearchApp::process(int argc, char* argv[]){
                 treeHeader.setRootIndexRBN(0);
                 
 
-                std::ofstream out("PT2_Randomized.idx", std::ios::binary);
+                std::ofstream out(header.getIndexFileName(), std::ios::binary);
                 if (!out.is_open())
                 {
-                    std::cerr << "Error: Cannot create index file: " << "PT2_Randomized.idx" << std::endl;
+                    std::cerr << "Error: Cannot create index file: " << header.getIndexFileName() << std::endl;
                     return false;
                 }
 
@@ -196,7 +196,7 @@ bool ZipSearchApp::process(int argc, char* argv[]){
                 
                 if(!blockBuffer.openFile(fileName, headerSize)){
                     std::cerr << "Failed to open block buffer\n";
-                    return false;
+                    continue;
                 }
                 blockBuffer.dumpLogicalOrder(out, sequenceSetHead, availListHead, blockSize, headerSize);
                 std::cout << "Logical dump written to: " << outFile << std::endl;
@@ -207,7 +207,7 @@ bool ZipSearchApp::process(int argc, char* argv[]){
                 
                 if(!blockBuffer.openFile(fileName, headerSize)){
                     std::cerr << "Failed to open block buffer\n";
-                    return false;
+                    continue;
                 }
                 blockBuffer.dumpPhysicalOrder(out, sequenceSetHead, availListHead, blockCount, blockSize, headerSize);
                 std::cout << "Physical dump written to: " << outFile << std::endl;
@@ -219,12 +219,14 @@ bool ZipSearchApp::process(int argc, char* argv[]){
                 uint32_t zipStart = std::stoul(argv[++i]);
                 uint32_t zipEnd = std::stoul(argv[++i]);
                 
-                std::cout << "Range Query Results for ZIPs " << zipStart << " to " << zipEnd << ":\n";
-                for(uint32_t zip = zipStart; zip <= zipEnd; ++zip){
-                    ZipCodeRecord outRecord;
-                    if(search(zip, blockSize, headerSize, outRecord)){
-                        std::cout << outRecord << std::endl;
-                    }
+                std::vector<ZipCodeRecord> outRecords;
+                if(!rangeQuery(zipStart, zipEnd, blockSize, headerSize, outRecords)){
+                    std::cerr << "Failed to perform range query from " << zipStart << " to " << zipEnd << std::endl;
+                    continue;
+                }
+                std::cout << "Range Query Results (" << zipStart << " to " << zipEnd << "):" << std::endl;
+                for(const auto& record : outRecords){
+                    std::cout << record << std::endl;
                 }
 
             }
@@ -326,7 +328,11 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
 
 
     blockBuffer.resetMerge();
-    uint32_t rbn = bPlusTree.findLeafRBN(zip);
+    uint32_t rbn;
+    if (!bPlusTree.search(zip, rbn)) {
+        std::cout << "Zip code " << zip << " not found." << std::endl;
+        return false;
+    }
         
     // Load and inspect the block BEFORE removal
     ActiveBlock blockBefore = blockBuffer.loadActiveBlockAtRBN(rbn, header.getBlockSize(), header.getHeaderSize());
@@ -364,6 +370,27 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
         header.setAvailableListRBN(availListRBN);
     }
 
+    return true;
+}
+
+bool ZipSearchApp::rangeQuery(uint32_t zipStart, uint32_t zipEnd, uint32_t blockSize, uint32_t headerSize, std::vector<ZipCodeRecord>& outRecords){
+    std::vector<uint32_t> rbns = bPlusTree.searchRange(zipStart, zipEnd);
+    BlockBuffer blockBuffer;
+    if(!blockBuffer.openFile(fileName,  headerSize)){
+        std::cerr << "Failed to open block buffer\n";
+        return false;
+    }
+    RecordBuffer recordBuffer;
+    for(auto rbn : rbns){
+        ActiveBlock block = blockBuffer.loadActiveBlockAtRBN(rbn, blockSize, headerSize);
+        std::vector<ZipCodeRecord> recordsInBlock;
+        recordBuffer.unpackBlock(block.data, recordsInBlock);
+        for(const auto& record : recordsInBlock){
+            if(record.getZipCode() >= zipStart && record.getZipCode() <= zipEnd){
+                outRecords.push_back(record);
+            }
+        }
+    }
     return true;
 }
 
@@ -430,3 +457,4 @@ bool ZipSearchApp::indexHandler(const HeaderRecord& header){
     }
     return true;
 }
+
