@@ -110,8 +110,15 @@ bool ZipSearchApp::process(int argc, char* argv[]){
     for (int i = 1; i < argc; ++i) {
         try {
             if(argv[i] == FILE_ARG){
-                if(!setDataFile(argv[++i]))
+                fileName = argv[++i];
+                if (!headerBuffer.readHeader(fileName, header)) {
+                    std::cerr << "Failed to read header from " << fileName << std::endl;
                     return false;
+                }
+                if(!indexHandler(header)){ 
+                    std::cerr << "Failed to handle index for " << fileName << std::endl;
+                    return false;
+                }
                 headerSize = header.getHeaderSize();
                 blockSize = header.getBlockSize();
                 sequenceSetHead = header.getSequenceSetListRBN();
@@ -259,12 +266,13 @@ bool ZipSearchApp::search(uint32_t zip, uint32_t blockSize, uint32_t headerSize,
         return false;
     }
 
-    std::cout << "Found zip code " << zip << " in block RBN: " << rbn << std::endl;
+    
 
 
     //**searches for a zip code in the blocked file */
     BlockBuffer blockBuffer;
     ZipCodeRecord record;
+
     if (blockBuffer.openFile(fileName, headerSize) && 
         blockBuffer.readRecordAtRBN(rbn, zip, blockSize, headerSize, record)) {
         outRecord = record;
@@ -366,7 +374,7 @@ bool ZipSearchApp::indexHandler(const HeaderRecord& header){
     const uint32_t blockCount = header.getBlockCount();
     const std::string indexFileName = header.getIndexFileName();
     const uint32_t sequenceSetListRBN = header.getSequenceSetListRBN();
-    const bool staleFlag = header.getStaleFlag();
+    const bool staleFlag = true;
 
     BPlusTreeHeaderBufferAlt bPlusTreeHeaderBuffer;
     

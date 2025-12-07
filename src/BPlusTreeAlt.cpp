@@ -18,7 +18,7 @@ bool BPlusTreeAlt::open(const std::string& inIndexFileName, const std::string& i
     BPlusTreeHeaderBufferAlt bPlusTreeHeaderBuffer;
     
     this->sequenceSetFilename = inSequenceSetFilename;
-    this->indexFilename = inIndexFilename;
+    this->indexFilename = inIndexFileName;
 
     // Open and read sequence set header
     if (!headerBuffer.readHeader(sequenceSetFilename, sequenceHeader)) 
@@ -28,14 +28,14 @@ bool BPlusTreeAlt::open(const std::string& inIndexFileName, const std::string& i
     }
 
     // Open and read B+ tree header
-    if (!bPlusTreeHeaderBuffer.readHeader(indexFileName, treeHeader))
+    if (!bPlusTreeHeaderBuffer.readHeader(indexFilename, treeHeader))
     {
         setError("Failed to read B+ tree header");
         return false;
     }
 
     // Open index page buffer
-    if (!indexPageBuffer.open(indexFileName, treeHeader.getBlockSize(), treeHeader.getHeaderSize())) 
+    if (!indexPageBuffer.open(indexFilename, treeHeader.getBlockSize(), treeHeader.getHeaderSize())) 
     {
         setError("Failed to open index page buffer");
         return false;
@@ -203,7 +203,7 @@ bool BPlusTreeAlt::buildFromSequenceSet()
         return false;
     }
 
-    if(!sequenceSetBuffer.openFile(sequenceSetFilename, sequenceHeader.getHeaderSize())
+    if(!sequenceSetBuffer.openFile(sequenceSetFilename, sequenceHeader.getHeaderSize()))
     {
         setError("Failed to open sequenceSetFile");
         return false;
