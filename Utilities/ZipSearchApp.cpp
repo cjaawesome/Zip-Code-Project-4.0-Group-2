@@ -253,11 +253,14 @@ bool ZipSearchApp::process(int argc, char* argv[]){
 
 bool ZipSearchApp::search(uint32_t zip, uint32_t blockSize, uint32_t headerSize, ZipCodeRecord& outRecord){
     //**searches for a zip code in the blocked file */
-    uint32_t rbn = bPlusTree.findLeafRBN(zip);
-    if (rbn == static_cast<uint32_t>(-1)) {
+    uint32_t rbn;
+    if (!bPlusTree.search(zip, rbn)) {
         std::cout << "Zip code " << zip << " not found." << std::endl;
         return false;
     }
+
+    std::cout << "Found zip code " << zip << " in block RBN: " << rbn << std::endl;
+
 
     //**searches for a zip code in the blocked file */
     BlockBuffer blockBuffer;
@@ -269,6 +272,7 @@ bool ZipSearchApp::search(uint32_t zip, uint32_t blockSize, uint32_t headerSize,
         return false;
     }
     return true;
+    
 }
 
 bool ZipSearchApp::add(const ZipCodeRecord zip, HeaderRecord& header){
@@ -282,7 +286,9 @@ bool ZipSearchApp::add(const ZipCodeRecord zip, HeaderRecord& header){
     uint32_t availListRBN = header.getAvailableListRBN();
 
     blockBuffer.resetSplit();
-    uint32_t rbn = bPlusTree.findLeafRBN(zip.getZipCode());
+    uint32_t rbn;
+    bPlusTree.search(zip.getZipCode(), rbn);
+
     
     if(!blockBuffer.addRecord(rbn, header.getBlockSize(), availListRBN, zip, 
                             header.getHeaderSize(), blockCount))
