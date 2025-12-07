@@ -22,7 +22,7 @@ public:
 
     ZipSearchApp(const std::string& file);
 
-    void setDataFile(const std::string& file);
+    bool setDataFile(const std::string& file);
 
     /**
      * @brief parses command line arguments for search and

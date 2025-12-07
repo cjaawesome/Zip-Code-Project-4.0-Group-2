@@ -52,7 +52,7 @@ ZipSearchApp::ZipSearchApp(const std::string& file){
     
 }
 
-void ZipSearchApp::setDataFile(const std::string& file){
+bool ZipSearchApp::setDataFile(const std::string& file){
     fileName = file;
     fileLoaded = true;
     HeaderRecord header;
@@ -60,11 +60,14 @@ void ZipSearchApp::setDataFile(const std::string& file){
     if (!headerBuffer.readHeader(fileName, header))
     {
         std::cerr << "Failed to read header from " << fileName << std::endl;
+        return false;
     }
     if (!indexHandler(header))
     {
         std::cerr << "Failed to handle index for " << fileName << std::endl;
+        return false;
     }
+    return true;
 }
 
 bool ZipSearchApp::process(int argc, char* argv[]){
@@ -107,7 +110,8 @@ bool ZipSearchApp::process(int argc, char* argv[]){
     for (int i = 1; i < argc; ++i) {
         try {
             if(argv[i] == FILE_ARG){
-                setDataFile(argv[++i]);
+                if(!setDataFile(argv[++i]))
+                    return false;
                 headerSize = header.getHeaderSize();
                 blockSize = header.getBlockSize();
                 sequenceSetHead = header.getSequenceSetListRBN();
