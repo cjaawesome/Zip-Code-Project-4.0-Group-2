@@ -1,4 +1,4 @@
-#include "BplusTreeAlt.h"
+#include "BPlusTreeAlt.h"
 
 BPlusTreeAlt::BPlusTreeAlt() : isOpen(false), errorState(false), errorMessage("") 
 {

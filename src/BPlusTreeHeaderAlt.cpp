@@ -1,4 +1,5 @@
 #include "BPlusTreeHeaderAlt.h"
+#include <cstring>
 
 BPlusTreeHeaderAlt::BPlusTreeHeaderAlt() : blockedFileName(""), height(0), rootIndexRBN(0),
     headerSize(0), indexStartRBN(0), indexBlockCount(0), blockSize(0)
