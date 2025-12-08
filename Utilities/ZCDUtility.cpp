@@ -321,7 +321,7 @@ bool convertCSVToBlockedSequenceSet(const std::string& csvFile, const std::strin
 }
 
 bool convertCSVToBlockedSequenceNoIndex(const std::string& csvFile, const std::string& zcbFile, 
-                                    uint32_t blockSize = 1024, uint16_t minBlockSize = 256)
+                                    uint32_t blockSize = 4096, uint16_t minBlockSize = 1024)
 {
     CSVBuffer csvBuffer;
     if(!csvBuffer.openFile(csvFile))
