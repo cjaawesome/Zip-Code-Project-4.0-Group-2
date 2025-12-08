@@ -185,14 +185,14 @@ bool buildBPlusTreeFromSequenceSet(const std::string& idxFile, const std::string
     BPlusTreeAlt tree;
     if(!tree.open(idxFile, zcbFile))
     {
-        std::cerr << "Failed to open B+ Tree." << std::endl;
+        std::cout << "Failed to open B+ Tree." << std::endl;
         return false;
     }
 
     if(!tree.buildFromSequenceSet())
     {
-        std::cerr << "Failed to build B+ Tree from sequence set." << std::endl;
-        std::cerr << "Error: " << tree.getLastError() << std::endl;
+        std::cout << "Failed to build B+ Tree from sequence set." << std::endl;
+        std::cout << "Error: " << tree.getLastError() << std::endl;
         return false;
     }
 
@@ -226,7 +226,7 @@ int main()
     std::cout << "STEP 2: Building B+ tree index..." << std::endl;
     if (!buildBPlusTreeFromSequenceSet(idxFile, zcbFile))
     {
-        std::cerr << "FAILED: B+ tree creation" << std::endl;
+        std::cout << "FAILED: B+ tree creation" << std::endl;
         return 1;
     }
     std::cout << " B+ tree built successfully\n" << std::endl;
@@ -355,13 +355,15 @@ int main()
 
     for (const auto& test : insertTests)
     {
+        std::cout << "Inserting Key: " << test.key << std::endl;
         if (tree.insert(test.key, test.blockRBN))
         {
             // Verify insertion
             uint32_t foundRBN;
+            std::cout << "Insertion successful searching for key: " << test.key << std::endl;
             if (tree.search(test.key, foundRBN) && foundRBN == test.blockRBN)
             {
-                std::cout << "SUCCESS" << std::endl;
+                std::cout << "SUCCESS - " << test.key << " found at: " << foundRBN << std::endl;
             }
             else
             {
@@ -375,36 +377,44 @@ int main()
     }
 
     // Test Remove
-    std::cout << "STEP 7: Testing remove functionality..." << std::endl;
+    std::cout << "\nSTEP 7: Testing remove functionality..." << std::endl;
     
     std::vector<uint32_t> removeTests = {
         1349,  
         2142,    
         92803   
     };
+
+    std::cout << tree.getLastError() << std::endl;
     
     for (const auto& key : removeTests)
     {
-        std::cout << "  Removing key=" << key << "... ";
+        std::cout << "  Removing key=" << key << "... " << std::flush;
         
-        if (tree.remove(key))
+        bool removeResult = tree.remove(key);
+        std::cout << "Remove returned: " << (removeResult ? "true" : "false") << std::endl;
+        
+        if (removeResult)
         {
-            // Verify removal
             uint32_t foundRBN;
-            if (!tree.search(key, foundRBN))
+            bool searchResult = tree.keyExistsInIndex(key);
+            std::cout << "    Search after remove: " << (searchResult ? "FOUND" : "NOT FOUND") << std::endl;
+            
+            if (!searchResult)
             {
-                std::cout << "SUCCESS " << std::endl;
+                std::cout << "    SUCCESS" << std::endl;
             }
             else
             {
-                std::cout << "FAILED (removed but still found) " << std::endl;
+                std::cout << "    FAILED (removed but still found)" << std::endl;
             }
         }
         else
         {
-            std::cout << "FAILED  - Error: " << tree.getLastError() << std::endl;
+            std::cout << "    FAILED - Error: '" << tree.getLastError() << "'" << std::endl;
         }
     }
+
     std::cout << "\n Remove tests completed" << std::endl;
     
     std::cout << std::endl;
@@ -414,6 +424,6 @@ int main()
     
     tree.close();
 
-    std::cout << "B+ Tree Test Concluded." << std::endl;
+    std::cout << "\nB+ Tree Test Concluded." << std::endl;
     return 0;
 }

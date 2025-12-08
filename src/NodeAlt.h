@@ -262,6 +262,13 @@ public:
     void clear();
 
     /**
+     * @brief Sets the max key var of the node after node.
+     * @details Used after node creation since it needs valid data first.
+     * @param max The calculated max size.
+     */
+    void setMaxKeys(size_t max);
+
+    /**
      * @brief Gets the current error message if the node is in an error state.
      * @return A string describing the error, or an empty string if no error exists.
      */

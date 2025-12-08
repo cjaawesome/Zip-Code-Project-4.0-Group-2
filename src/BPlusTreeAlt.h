@@ -84,6 +84,13 @@ public:
     bool getIsStale() const;
 
     /**
+     * @brief Used to verify a key exists in the tree
+     * @param Key The key to search for.
+     * @return Returns true if the key is found. False if otherwise.
+     */
+    bool keyExistsInIndex(uint32_t key);
+
+    /**
      * @brief Returns the last error encountered by the B+ tree class.
      * @return Returns the last error as a string.
      */
