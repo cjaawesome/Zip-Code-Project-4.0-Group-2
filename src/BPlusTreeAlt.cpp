@@ -1429,6 +1429,7 @@ std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const u
     if(node == nullptr)
     {
         setError("Failed to load current node in search range.");
+        std::cout << "you failed here dumbass" << std::endl;
         return blockRBNsFound;
     }
     // While node is not null
@@ -1437,19 +1438,24 @@ std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const u
         bool rangeExceeded = false;
         for(size_t i = 0; i < node->getKeyCount(); ++i)
         {
+            
             // Get current key in the current rbn
             uint32_t currentKey = node->getKeyAt(i);
+            
             // If less than key start skip ahead to next loop
             if(currentKey < keyStart)
             {
                  continue;
             }
             // If greater than keyEnd exit the loop
+            
+            /*
             if(currentKey > keyEnd)
             {
                 rangeExceeded = true;
                 break;
             }
+            */
 
             uint32_t blockRBN = node->getValueAt(i);
             blockRBNsFound.push_back(blockRBN);
