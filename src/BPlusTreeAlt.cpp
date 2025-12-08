@@ -1412,7 +1412,7 @@ bool BPlusTreeAlt::removeRecursive(uint32_t nodeRBN, uint32_t key, uint32_t pare
 std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const uint32_t keyEnd)
 {
     // Create vector to store keys in range
-    std::vector<uint32_t> keysFound;
+    std::vector<uint32_t> blockRBNsFound;
     // Start at tree root
     uint32_t rootRBN = treeHeader.getRootIndexRBN();
     // Find the starting rbn for the search
@@ -1422,14 +1422,14 @@ std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const u
     if(currentRBN == 0)
     {
         setError("Current rbn is 0 after range search in search range.");
-        return keysFound;
+        return blockRBNsFound;
     }
     // Load starting node
     NodeAlt* node = loadNode(currentRBN);
     if(node == nullptr)
     {
         setError("Failed to load current node in search range.");
-        return keysFound;
+        return blockRBNsFound;
     }
     // While node is not null
     while(node != nullptr)
@@ -1450,8 +1450,9 @@ std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const u
                 rangeExceeded = true;
                 break;
             }
-            // Key is in range add to vector
-            keysFound.push_back(currentKey);
+
+            uint32_t blockRBN = node->getValueAt(i);
+            blockRBNsFound.push_back(blockRBN);
         }
         // Exit while loop if out of range
         if(rangeExceeded)
@@ -1482,7 +1483,7 @@ std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const u
          delete node;
     }
     // Return range
-    return keysFound;
+    return blockRBNsFound;
 }
 
 uint32_t BPlusTreeAlt::rangeSearch(uint32_t nodeRBN, uint32_t key)
