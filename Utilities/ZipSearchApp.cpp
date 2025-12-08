@@ -239,17 +239,6 @@ bool ZipSearchApp::process(int argc, char* argv[]){
             std::cerr << "Error parsing arguments: " << e.what() << std::endl;
             return false;
         }
-
-        //update index if needed
-
-        if(blockBuffer.getSplitOccurred() || blockBuffer.getMergeOccurred()){
-        //rebuild index
-            if(!bPlusTree.buildFromSequenceSet()){
-                std::cerr << "Failed to rebuild B+ tree index." << std::endl;
-                return false;
-            }
-        }
-        
     }
 
     
