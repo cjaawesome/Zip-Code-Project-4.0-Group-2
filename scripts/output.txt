@@ -1,0 +1,14 @@
+========================================
+    B+ TREE COMPREHENSIVE TEST SUITE    
+========================================
+
+STEP 1: Creating blocked sequence set from CSV...
+Read 40933 records.
+Sorted records by ZipCode.
+Converting data/PT2_Sorted.csv to data/test_output.zcb...
+Created blocked sequence set with 558 blocks
+
+ Sequence set created successfully
+
+STEP 2: Building B+ tree index...
+Building B+ Tree from sequence set...

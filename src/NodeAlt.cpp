@@ -358,7 +358,7 @@ void NodeAlt::clear()
     values.clear();
     childRBNs.clear();
 }
-
+/*
 void NodeAlt::pack(std::vector<uint8_t>& data) const
 {
     data.clear();
@@ -421,6 +421,67 @@ void NodeAlt::pack(std::vector<uint8_t>& data) const
     while(data.size() < blockSize)
     {
         data.push_back(0);
+    }
+}
+    */
+
+void NodeAlt::pack(std::vector<uint8_t>& data) const
+{
+    // 1. Allocate full block size and pad unused space
+    data.clear();
+    data.resize(blockSize, 0); 
+
+    size_t offset = 0;
+    
+    // Node Type (1 byte)
+    data[offset++] = isLeaf;
+    
+    // Key Count (4 bytes) 
+    uint32_t keyCount = static_cast<uint32_t>(keys.size());
+    std::memcpy(data.data() + offset, &keyCount, sizeof(keyCount));
+    offset += sizeof(keyCount);
+
+    // Parent RBN (4 bytes)
+    std::memcpy(data.data() + offset, &parentRBN, sizeof(parentRBN));
+    offset += sizeof(parentRBN);
+    
+    // Leaf Node Specific Serialization
+    if(isLeaf == 1)
+    {
+        // Prev/Next Leaf RBNs (8 bytes total)
+        std::memcpy(data.data() + offset, &prevLeafRBN, sizeof(prevLeafRBN));
+        offset += sizeof(prevLeafRBN);
+        std::memcpy(data.data() + offset, &nextLeafRBN, sizeof(nextLeafRBN));
+        offset += sizeof(nextLeafRBN);
+        
+        // Keys and Values
+        for(size_t i = 0; i < keys.size(); ++i) // Only iterate over remaining keys
+        {
+            // Write Key
+            std::memcpy(data.data() + offset, &keys[i], sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+            
+            // Write Value
+            std::memcpy(data.data() + offset, &values[i], sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+        }
+    }
+    // Index Node Specific Serialization
+    else 
+    {
+        // Write Keys
+        for(size_t i = 0; i < keys.size(); ++i) 
+        {
+            std::memcpy(data.data() + offset, &keys[i], sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+        }
+
+        // Write Child RBNs (one more than keyCount)
+        for(size_t i = 0; i < childRBNs.size(); ++i)
+        {
+            std::memcpy(data.data() + offset, &childRBNs[i], sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+        }
     }
 }
 

@@ -81,6 +81,9 @@ bool PageBufferAlt::writeBlock(uint32_t rbn, const std::vector<uint8_t>& data)
         setError("Failed to write full block at RBN: " + std::to_string(rbn));
         return false;
     }
+    
+    file.flush();
+
     return true;
 }
 

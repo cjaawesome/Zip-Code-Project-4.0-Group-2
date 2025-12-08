@@ -2,6 +2,7 @@
 #define NODE_ALT_H
 
 #include "stdint.h"
+#include <cstring> 
 #include <vector>
 #include <string>
 #include <iostream>
