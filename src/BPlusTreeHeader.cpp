@@ -1,4 +1,5 @@
 #include "BPlusTreeHeader.h"
+#include <cstring>
 
 BPlusTreeHeader::BPlusTreeHeader() : height(0), rootIndexRBN(0) {}
 
