@@ -108,7 +108,7 @@ public:
      * @param The key that will be added to B+ tree and represent the ZipCodeRecord.
      * @return Returns the RBN that record will be placed in the sequence set file.
      */
-    uint32_t BPlusTreeAlt::findInsertionBlock(uint32_t key);
+    uint32_t findInsertionBlock(uint32_t key);
     
     /**
      * @brief Searches the B+ tree for all values inbetween to uint32_t's.

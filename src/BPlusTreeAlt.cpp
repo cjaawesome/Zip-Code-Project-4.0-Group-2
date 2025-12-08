@@ -1475,13 +1475,13 @@ std::vector<uint32_t> BPlusTreeAlt::searchRange(const uint32_t keyStart, const u
             }
             // If greater than keyEnd exit the loop
             
-            /*
-            if(currentKey > keyEnd)
+            
+            if(currentKey > keyEnd && node->getParentRBN() != 0)
             {
                 rangeExceeded = true;
                 break;
             }
-            */
+            
 
             uint32_t blockRBN = node->getValueAt(i);
             blockRBNsFound.push_back(blockRBN);
