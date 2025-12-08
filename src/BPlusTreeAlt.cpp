@@ -94,7 +94,6 @@ NodeAlt* BPlusTreeAlt::loadNode(uint32_t rbn)
         return nullptr;
     }
     
-    // Create with dummy values - unpack will set the real values
     NodeAlt* node = new NodeAlt(false, blockSize);
     
     if(!node->unpack(buffer))
@@ -103,7 +102,6 @@ NodeAlt* BPlusTreeAlt::loadNode(uint32_t rbn)
         return nullptr;
     }
     
-    // CRITICAL FIX: Recalculate maxKeys after unpack sets the real isLeaf value
     node->setMaxKeys(NodeAlt::calculateMaxKeys(blockSize, node->isLeafNode() == 1));
     
     return node;

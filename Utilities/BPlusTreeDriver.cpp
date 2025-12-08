@@ -328,6 +328,7 @@ int main()
     {
         // Get block RBNs in range
         std::vector<uint32_t> blockRBNs = tree.searchRange(test.start, test.end);
+        std::cout << "Testing range: " << test.start << " - " << test.end << std::endl;
         std::cout << "    Found " << blockRBNs.size() << " blocks containing range" << std::endl;
         
         if (blockRBNs.empty())
