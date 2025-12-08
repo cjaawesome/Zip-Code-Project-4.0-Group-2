@@ -195,6 +195,32 @@ uint32_t BPlusTreeAlt::findLeafRBN(uint32_t key)
     return 0;
 }
 
+uint32_t BPlusTreeAlt::findInsertionBlock(uint32_t key)
+{
+    if(!isOpen)
+        return 0;
+
+    uint32_t leafRBN = findLeafRBN(key);
+
+    NodeAlt* leaf = loadNode(leafRBN);
+    if(leaf == nullptr)
+        return 0;
+
+    for(size_t i = 0; i < leaf->getKeyCount(); ++i)
+    {
+        if(key <= leaf->getKeyAt(i));
+        {
+            uint32_t blockRBN = leaf->getValueAt(i);
+            delete leaf;
+            return blockRBN;
+        }
+    }
+
+    uint32_t blockRBN = leaf->getValueAt(leaf->getKeyCount() - 1);
+    delete leaf;
+    return blockRBN;
+}
+
 bool BPlusTreeAlt::buildFromSequenceSet()
 {
     if(!isOpen)

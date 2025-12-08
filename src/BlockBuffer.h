@@ -9,6 +9,22 @@
 #include "RecordBuffer.h"
 #include "ZipCodeRecord.h"
 
+struct SplitInfo
+{
+    uint32_t newRBN = 0;
+    uint32_t oldRBN = 0;
+    uint32_t oldHighestKey = 0;
+    uint32_t newHighestKey = 0;
+};
+
+struct MergeInfo
+{
+    uint32_t survivingBlockRBN = 0;
+    uint32_t survivingBlockHighestKey = 0;
+    uint32_t mergedBlockRBN = 0;
+    uint32_t mergedBlockHighestKey = 0;
+};
+
 class BlockBuffer
 {
     public:
@@ -192,6 +208,10 @@ class BlockBuffer
 
         bool unpackBlockAPI(const std::vector<char>& blockData, std::vector<ZipCodeRecord>& records);
 
+        SplitInfo getLastSplitInfo() const;
+
+        MergeInfo getLastMergeInfo() const;
+
     private:
         uint32_t recordsProcessed; // Number of records processed from input stream
         uint32_t blocksProcessed; // Number of blocks processed from input stream
@@ -201,6 +221,9 @@ class BlockBuffer
         bool mergeOccurred; // Tracks if a merge occurred during last remove operation. Likely temporary
         bool splitOccurred; // Tracks if a split occurred during last add operation.
         RecordBuffer recordBuffer; // RecordBuffer for packing/unpacking records
+
+        SplitInfo lastSplit;
+        MergeInfo mergeInfo;
 
         /**
          * @brief Allocates a new block at the end of the file

@@ -281,21 +281,40 @@ bool ZipSearchApp::add(const ZipCodeRecord zip, HeaderRecord& header){
         std::cerr << "Failed to open block buffer\n";
         return 1;
     }
+
     uint32_t blockCount = header.getBlockCount();
     uint32_t availListRBN = header.getAvailableListRBN();
 
     blockBuffer.resetSplit();
-    uint32_t rbn;
-    bPlusTree.search(zip.getZipCode(), rbn);
-
+    uint32_t targetBlockRBN = bPlusTree.findInsertionBlock(zip.getZipCode());
     
-    if(!blockBuffer.addRecord(rbn, header.getBlockSize(), availListRBN, zip, 
+    if(targetBlockRBN == 0)
+    {
+        std::cerr << "Failed to find insertion block." << std::endl;
+        return false;
+    }
+    
+    if(!blockBuffer.addRecord(targetBlockRBN, header.getBlockSize(), availListRBN, zip, 
                             header.getHeaderSize(), blockCount))
     {
         return false;
     }
 
-    
+    if(blockBuffer.getSplitOccurred())
+    {
+        SplitInfo splitInfo = blockBuffer.getLastSplitInfo();
+
+        uint32_t originalHighestKey = splitInfo.oldHighestKey;
+        
+        uint32_t newBlockRBN = splitInfo.newRBN;
+        uint32_t newBlockHighestKey = splitInfo.newHighestKey;
+        
+        if(!bPlusTree.insert(newBlockHighestKey, newBlockRBN))
+        {
+            std::cerr << "Failed to update B+ tree after split\n";
+            return false;
+        }
+    } 
 
     return true;
 }
@@ -330,6 +349,8 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
     ActiveBlock blockBefore = blockBuffer.loadActiveBlockAtRBN(rbn, header.getBlockSize(), header.getHeaderSize());
     std::vector<ZipCodeRecord> recordsBefore;
     recordBuffer.unpackBlock(blockBefore.data, recordsBefore);
+
+    uint32_t oldHighestKey = recordsBefore.empty() ? 0 : recordsBefore.back().getZipCode();
         
     // Find the record we're about to remove and show its size
     auto it = std::find_if(recordsBefore.begin(), recordsBefore.end(),
@@ -342,7 +363,7 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
     {
         if(blockBuffer.getMergeOccurred()) 
         {
-            
+            MergeInfo mergeInfo = blockBuffer.getLastMergeInfo();
             // Check adjacent block sizes
             if(blockBefore.precedingRBN != 0) {
                 ActiveBlock prec = blockBuffer.loadActiveBlockAtRBN(blockBefore.precedingRBN, header.getBlockSize(), header.getHeaderSize());
@@ -350,13 +371,54 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
             if(blockBefore.succeedingRBN != 0) {
                 ActiveBlock succ = blockBuffer.loadActiveBlockAtRBN(blockBefore.succeedingRBN, header.getBlockSize(), header.getHeaderSize());
             }
+            if(!bPlusTree.remove(mergeInfo.mergedBlockHighestKey))
+            {
+                std::cerr << "Failed to remove merge block from B+ tree." << std::endl;
+                return false;
+            }
+
+            if(mergeInfo.survivingBlockHighestKey != mergeInfo.mergedBlockHighestKey &&
+                mergeInfo.survivingBlockRBN == rbn)
+            {
+                if(!bPlusTree.remove(mergeInfo.mergedBlockHighestKey))
+                {
+                    std::cerr << "Failed to remove old key from B+ tree\n";
+                    return false;
+                }
+
+                if(!bPlusTree.insert(mergeInfo.survivingBlockHighestKey, mergeInfo.survivingBlockRBN))
+                {
+                    std::cerr << "Failed to insert updated key into B+ tree\n";
+                    return false;
+                }
+            }
         }
-        if(!bPlusTree.remove(zip));
+        else
         {
-            std::cout << "Failed to remove key from B+ tree via search app." << std::endl;
-            return false;
+            ActiveBlock blockAfter = blockBuffer.loadActiveBlockAtRBN(rbn, blockSize, headerSize);
+            std::vector<ZipCodeRecord> recordsAfter;
+            recordBuffer.unpackBlock(blockAfter.data, recordsAfter);
+            
+            uint32_t newHighestKey = recordsAfter.empty() ? 0 : 
+                                    recordsAfter.back().getZipCode();
+            
+            if(newHighestKey != oldHighestKey)
+            {
+                // Highest key changed, update B+ tree
+                if(!bPlusTree.remove(oldHighestKey))
+                {
+                    std::cerr << "Failed to remove old key from B+ tree\n";
+                    return false;
+                }
+                
+                if(!bPlusTree.insert(newHighestKey, rbn))
+                {
+                    std::cerr << "Failed to insert updated key into B+ tree\n";
+                    return false;
+                }
+            }
         }
-      }
+    }
     else
     {
          return false;

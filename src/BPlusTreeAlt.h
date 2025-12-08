@@ -102,6 +102,13 @@ public:
      * @return The function returns the RBN of the leaf node that contains the pointer to the sequence set block the key is contained in.
      */
     uint32_t searchRecursive(uint32_t nodeRBN, uint32_t key);
+
+    /**
+     * @brief Finds the rbn that a key should be placed within the sequence set.
+     * @param The key that will be added to B+ tree and represent the ZipCodeRecord.
+     * @return Returns the RBN that record will be placed in the sequence set file.
+     */
+    uint32_t BPlusTreeAlt::findInsertionBlock(uint32_t key);
     
     /**
      * @brief Searches the B+ tree for all values inbetween to uint32_t's.

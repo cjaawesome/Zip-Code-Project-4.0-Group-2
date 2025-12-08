@@ -115,6 +115,11 @@ bool BlockBuffer::removeRecordAtRBN(const uint32_t rbn, const uint16_t minBlockS
                     writeActiveBlockAtRBN(block.succeedingRBN, blockSize, headerSize, succeedingBlock);
                 }
 
+                mergeInfo.mergedBlockRBN = rbn;
+                mergeInfo.mergedBlockHighestKey = records.back().getZipCode();
+                mergeInfo.survivingBlockRBN = block.precedingRBN;
+                mergeInfo.survivingBlockHighestKey = precedingRecords.back().getZipCode();
+
                 writeActiveBlockAtRBN(block.precedingRBN, blockSize, headerSize, precedingBlock);
                 freeBlock(rbn, availListRBN, blockSize, headerSize);
                 mergeOccurred = true;
@@ -168,6 +173,11 @@ bool BlockBuffer::removeRecordAtRBN(const uint32_t rbn, const uint16_t minBlockS
                     nextBlock.precedingRBN = rbn;
                     writeActiveBlockAtRBN(succeedingBlock.succeedingRBN, blockSize, headerSize, nextBlock);
                 }
+
+                mergeInfo.mergedBlockRBN = block.succeedingRBN;
+                mergeInfo.mergedBlockHighestKey = succeedingRecords.back().getZipCode();
+                mergeInfo.survivingBlockRBN = rbn;
+                mergeInfo.survivingBlockHighestKey = records.back().getZipCode();
 
                 writeActiveBlockAtRBN(rbn, blockSize, headerSize, block);
                 freeBlock(block.succeedingRBN, availListRBN, blockSize, headerSize);
@@ -274,6 +284,8 @@ bool BlockBuffer::addRecord(const uint32_t rbn, const uint32_t blockSize, uint32
     // Gotta split now no other choice
     uint32_t newRBN = allocateBlock(availListRBN, blockCount, blockSize, headerSize);
 
+    lastSplit.oldHighestKey = records.back().getZipCode();
+
     records.push_back(record);
     std::sort(records.begin(), records.end(), 
              [](const ZipCodeRecord& a, const ZipCodeRecord& b) 
@@ -285,6 +297,8 @@ bool BlockBuffer::addRecord(const uint32_t rbn, const uint32_t blockSize, uint32
 
     std::vector<ZipCodeRecord> splitRecords(records.begin() + remainder, records.end());
     records.erase(records.begin() + remainder, records.end());
+
+    lastSplit.newHighestKey = splitRecords.back().getZipCode();
 
     recordBuffer.packBlock(records, block.data, blockSize);
 
@@ -307,6 +321,11 @@ bool BlockBuffer::addRecord(const uint32_t rbn, const uint32_t blockSize, uint32
     }
         
     splitOccurred = true;
+
+    lastSplit.oldRBN = rbn;
+    lastSplit.newRBN = newRBN;
+
+
     return (writeActiveBlockAtRBN(rbn, blockSize, headerSize, block) && 
             writeActiveBlockAtRBN(newRBN, blockSize, headerSize, splitBlock));
 }
@@ -319,6 +338,16 @@ bool BlockBuffer::getMergeOccurred() const
 bool BlockBuffer::getSplitOccurred() const
 {
     return splitOccurred;
+}
+
+SplitInfo BlockBuffer::getLastSplitInfo() const
+{
+    return lastSplit;
+}
+
+MergeInfo BlockBuffer::getLastMergeInfo() const
+{
+    return mergeInfo;
 }
 
 bool BlockBuffer::writeActiveBlockAtRBN(const uint32_t rbn, const uint32_t blockSize, const size_t headerSize, const ActiveBlock& block)
