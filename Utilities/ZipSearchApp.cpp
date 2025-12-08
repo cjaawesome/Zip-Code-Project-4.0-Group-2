@@ -274,6 +274,7 @@ bool ZipSearchApp::search(uint32_t zip, uint32_t blockSize, uint32_t headerSize,
     } else {
         return false;
     }
+    blockBuffer.closeFile();
     return true;
     
 }
@@ -319,7 +320,7 @@ bool ZipSearchApp::add(const ZipCodeRecord zip, HeaderRecord& header){
             return false;
         }
     } 
-
+    blockBuffer.closeFile();
     return true;
 }
 
@@ -432,7 +433,7 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
     {
         header.setAvailableListRBN(availListRBN);
     }
-
+    blockBuffer.closeFile();
     return true;
 }
 
@@ -454,6 +455,7 @@ bool ZipSearchApp::rangeQuery(uint32_t zipStart, uint32_t zipEnd, uint32_t block
             }
         }
     }
+    blockBuffer.closeFile();
     return true;
 }
 
