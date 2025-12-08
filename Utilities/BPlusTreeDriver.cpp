@@ -213,7 +213,7 @@ int main()
     const uint32_t blockSize = 4096;
     const uint16_t minBlockSize = 1024;
 
-    // ========== STEP 1: CREATE SEQUENCE SET ==========
+    // Create Sequence Set
     std::cout << "STEP 1: Creating blocked sequence set from CSV..." << std::endl;
     if(!convertCSVToBlockedSequenceSet(csvFile, zcbFile, blockSize, minBlockSize))
     {
@@ -222,7 +222,7 @@ int main()
     }
     std::cout << " Sequence set created successfully\n" << std::endl;
 
-    // ========== STEP 2: BUILD B+ TREE ==========
+    // Build Tree
     std::cout << "STEP 2: Building B+ tree index..." << std::endl;
     if (!buildBPlusTreeFromSequenceSet(idxFile, zcbFile))
     {
@@ -231,7 +231,7 @@ int main()
     }
     std::cout << " B+ tree built successfully\n" << std::endl;
 
-    // ========== STEP 3: OPEN TREE AND VERIFY STRUCTURE ==========
+    // Open Tree
     std::cout << "STEP 3: Opening B+ tree and verifying structure..." << std::endl;
     BPlusTreeAlt tree;
     
@@ -255,7 +255,7 @@ int main()
         return 1;
     }
 
-    // ========== STEP 4: TEST SEARCH ==========
+    // Test Search
     std::cout << "STEP 4: Testing search functionality..." << std::endl;
     
     struct SearchTest {
@@ -301,19 +301,18 @@ int main()
     }
     std::cout << "Search tests passed: " << searchPassed << "/" << searchTests.size() << "\n" << std::endl;
 
-    std::cout << "STEP 5: Testing range query..." << std::endl;
+    std::cout << "Testing range query..." << std::endl;
     
     struct RangeTest {
         uint32_t start;
         uint32_t end;
-        std::string description;
     };
     
     std::vector<RangeTest> rangeTests = {
-        {500, 1000, "Small range (500-1000)"},
-        {10000, 11000, "Medium range (10000-11000)"},
-        {0, 1000, "Range before tree (0-1000)"},
-        {90000, 100000, "Range at end (90000-100000)"}
+        {500, 1000},
+        {10000, 11000},
+        {0, 1000},
+        {90000, 100000}
     };
     
     RecordBuffer recordBuffer;
@@ -327,8 +326,6 @@ int main()
     
     for (const auto& test : rangeTests)
     {
-        std::cout << "\n  Testing: " << test.description << std::endl;
-        
         // Get block RBNs in range
         std::vector<uint32_t> blockRBNs = tree.searchRange(test.start, test.end);
         std::cout << "    Found " << blockRBNs.size() << " blocks containing range" << std::endl;
@@ -343,15 +340,13 @@ int main()
     blockBuffer.closeFile();
     std::cout << "\n[PASS] Range query tests completed\n" << std::endl;
 
-    std::cout << "STEP 6: Testing insert functionality..." << std::endl;
+    std::cout << "Testing insert functionality..." << std::endl;
 
     struct InsertTest {
         uint32_t key;
         uint32_t blockRBN;
     };
 
-    // These should be NEW highest keys that don't exist yet
-    // But point to blocks that DO exist (simulating a block split)
     std::vector<InsertTest> insertTests = {
         {93597, tree.findInsertionBlock(93597)},
         {1006, tree.findInsertionBlock(1006)},
@@ -379,7 +374,7 @@ int main()
         }
     }
 
-    // ========== STEP 7: TEST REMOVE ==========
+    // Test Remove
     std::cout << "STEP 7: Testing remove functionality..." << std::endl;
     
     std::vector<uint32_t> removeTests = {
@@ -414,15 +409,11 @@ int main()
     
     std::cout << std::endl;
 
-    // ========== STEP 8: STRESS TEST ==========
-    std::cout << "STEP 8: Stress testing with multiple operations..." << std::endl;
-    
-    int successCount = 0;
-    int totalOps = 0;
+    std::cout << "\n Printing Tree: " << std::endl;
+    tree.printTree();
     
     tree.close();
 
-    // ========== FINAL SUMMARY ==========
     std::cout << "B+ Tree Test Concluded." << std::endl;
     return 0;
 }

@@ -289,8 +289,6 @@ private:
      * @return A vector or parentRBN's that are used to determine the height of the B+ tree within build tree from entries.
      */
     std::vector<uint32_t> buildIndexLevel(const std::vector<uint32_t>& childRBNs);
-
-    bool freeRBN(uint32_t rbn);
 };
 
 #endif
