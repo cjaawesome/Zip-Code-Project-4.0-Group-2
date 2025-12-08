@@ -305,6 +305,9 @@ bool ZipSearchApp::add(const ZipCodeRecord zip, HeaderRecord& header){
     {
         return false;
     }
+
+    
+
     return true;
 }
 
@@ -358,6 +361,11 @@ bool ZipSearchApp::remove(uint32_t zip, HeaderRecord& header){
             if(blockBefore.succeedingRBN != 0) {
                 ActiveBlock succ = blockBuffer.loadActiveBlockAtRBN(blockBefore.succeedingRBN, header.getBlockSize(), header.getHeaderSize());
             }
+        }
+        if(!bPlusTree.remove(zip));
+        {
+            std::cout << "Failed to remove key from B+ tree via search app." << std::endl;
+            return false;
         }
       }
     else
