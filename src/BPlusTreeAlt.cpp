@@ -12,10 +12,13 @@ BPlusTreeAlt::~BPlusTreeAlt()
     }
 }
 
-bool BPlusTreeAlt::open(const std::string& indexFileName, const std::string& sequenceSetFilename)
+bool BPlusTreeAlt::open(const std::string& inIndexFileName, const std::string& inSequenceSetFilename)
 {
     HeaderBuffer headerBuffer;
     BPlusTreeHeaderBufferAlt bPlusTreeHeaderBuffer;
+    
+    this->sequenceSetFilename = inSequenceSetFilename;
+    this->indexFilename = inIndexFileName;
 
     // Open and read sequence set header
     if (!headerBuffer.readHeader(sequenceSetFilename, sequenceHeader)) 
@@ -25,26 +28,26 @@ bool BPlusTreeAlt::open(const std::string& indexFileName, const std::string& seq
     }
 
     // Open and read B+ tree header
-    if (!bPlusTreeHeaderBuffer.readHeader(indexFileName, treeHeader))
+    if (!bPlusTreeHeaderBuffer.readHeader(indexFilename, treeHeader))
     {
         setError("Failed to read B+ tree header");
         return false;
     }
 
     // Open index page buffer
-    if (!indexPageBuffer.open(indexFileName, treeHeader.getBlockSize(), treeHeader.getHeaderSize())) 
+    if (!indexPageBuffer.open(indexFilename, treeHeader.getBlockSize(), treeHeader.getHeaderSize())) 
     {
         setError("Failed to open index page buffer");
         return false;
     }
-
+/*
     // Open sequence set buffer
     if (!sequenceSetBuffer.openFile(sequenceSetFilename, sequenceHeader.getHeaderSize())) 
     {
         setError("Failed to open sequence set buffer");
         return false;
     }
-
+*/
     sequenceHeaderSize = sequenceHeader.getHeaderSize();
     blockSize = sequenceHeader.getBlockSize();
     isOpen = true;
@@ -80,7 +83,7 @@ void BPlusTreeAlt::close()
     BPlusTreeHeaderBufferAlt headerBuffer;
     headerBuffer.writeHeader(indexPageBuffer.getFileStream(), treeHeader);
     
-    sequenceSetBuffer.closeFile();
+    // sequenceSetBuffer.closeFile();
     indexPageBuffer.closeFile();
     isOpen = false;
 }
@@ -199,6 +202,12 @@ bool BPlusTreeAlt::buildFromSequenceSet()
         setError("Buffers not open.");
         return false;
     }
+
+    if(!sequenceSetBuffer.openFile(sequenceSetFilename, sequenceHeader.getHeaderSize()))
+    {
+        setError("Failed to open sequenceSetFile");
+        return false;
+    }
     // Create index entry vector
     std::vector<IndexEntry> entries;
     // Start at root of sequence set
@@ -219,6 +228,7 @@ bool BPlusTreeAlt::buildFromSequenceSet()
         }
         currentRBN = block.succeedingRBN;
     }
+    sequenceSetBuffer.closeFile();
     // Start building the tree from the index entries
     bool result = buildTreeFromEntries(entries);
     // Return if the build was successful

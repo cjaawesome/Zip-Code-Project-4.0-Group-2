@@ -22,7 +22,7 @@ public:
 
     ZipSearchApp(const std::string& file);
 
-    void setDataFile(const std::string& file);
+    bool setDataFile(const std::string& file);
 
     /**
      * @brief parses command line arguments for search and
@@ -36,7 +36,6 @@ public:
     
 private:
     std::string fileName;
-    BlockIndexFile blockIndexFile;
     BPlusTreeAlt bPlusTree;
     bool fileLoaded = false;
 
@@ -63,5 +62,14 @@ private:
      * @return true if the zip code was removed successfully, false otherwise
      */
     bool remove(uint32_t zip, HeaderRecord& header);
+
+    /**
+     * @brief performs a range query for zip codes in the blocked file
+     * @param zipStart the starting zip code
+     * @param zipEnd the ending zip code
+     * @param outRecords vector to store the resulting zip code records
+     * @return true if the range query was successful, false otherwise
+     */
+    bool rangeQuery(uint32_t zipStart, uint32_t zipEnd, uint32_t blockSize, uint32_t headerSize, std::vector<ZipCodeRecord>& outRecords);
 };
 #endif

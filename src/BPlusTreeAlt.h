@@ -130,6 +130,9 @@ private:
     bool isStale; // Indicates if the B+ tree is stale
 
     std::string errorMessage; // Stores the last error encountered.
+    std::string sequenceSetFilename;
+    std::string indexFilename;
+
 
     BPlusTreeHeaderAlt treeHeader; // Stored for necessary index realted metadata
     HeaderRecord sequenceHeader; // Stored for necessary sequence set related metadata

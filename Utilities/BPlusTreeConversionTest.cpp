@@ -208,6 +208,8 @@ bool convertBlockedSequenceSetToBPlusTree(const std::string& idxFile, const std:
 
     std::cout << "Scanned " << indexEntries.size() << " blocks from sequence set" << std::endl;
 
+    //create B+ tree file
+    
     BPlusTreeHeaderAlt treeHeader;
     treeHeader.setBlockedFileName(zcbFile);
     treeHeader.setBlockSize(seqHeader.getBlockSize());
