@@ -200,6 +200,8 @@ bool ZipSearchApp::process(int argc, char* argv[]){
                 }
                 blockBuffer.dumpLogicalOrder(out, sequenceSetHead, availListHead, blockSize, headerSize);
                 std::cout << "Logical dump written to: " << outFile << std::endl;
+                out.close();
+                blockBuffer.closeFile();
             }
             else if(argv[i] == PHYSICAL_DUMP_ARG){
                 std::string outFile = argv[++i]; //get out file name
@@ -211,6 +213,8 @@ bool ZipSearchApp::process(int argc, char* argv[]){
                 }
                 blockBuffer.dumpPhysicalOrder(out, sequenceSetHead, availListHead, blockCount, blockSize, headerSize);
                 std::cout << "Physical dump written to: " << outFile << std::endl;
+                out.close();
+                blockBuffer.closeFile();
             }
             else if(argv[i] == PRINT_ARG){
                 bPlusTree.printTree();
