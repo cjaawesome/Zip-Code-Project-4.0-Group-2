@@ -409,7 +409,7 @@ bool ZipSearchApp::indexHandler(const HeaderRecord& header){
     const uint32_t blockCount = header.getBlockCount();
     const std::string indexFileName = header.getIndexFileName();
     const uint32_t sequenceSetListRBN = header.getSequenceSetListRBN();
-    const bool staleFlag = true;
+    const bool staleFlag = header.getStaleFlag();
 
     BPlusTreeHeaderBufferAlt bPlusTreeHeaderBuffer;
     
